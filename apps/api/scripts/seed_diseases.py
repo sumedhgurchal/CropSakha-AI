@@ -1,0 +1,994 @@
+"""
+CropSakha AI — Comprehensive Knowledge Base & Demo Seeder
+Seeds all 38 PlantVillage crop-disease classes, demo farmer account, and historic scans.
+"""
+import asyncio
+import json
+import os
+import sys
+import uuid
+from datetime import datetime, timedelta
+
+# Ensure root path is accessible
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, "../../.."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+if os.path.join(project_root, "apps", "api") not in sys.path:
+    sys.path.insert(0, os.path.join(project_root, "apps", "api"))
+
+from sqlalchemy import select, delete
+from apps.api.database import async_session, init_db
+from apps.api.models import Disease, User, UserRole, CropScan, Prediction, ConfidenceLevel
+from apps.api.services.security import get_password_hash
+
+ALL_DISEASES = [
+    {
+        "name": "Apple___Apple_scab",
+        "display_name": "Apple Scab",
+        "crop": "Apple",
+        "regional_names": {"hi": "सेब का पपड़ी रोग (स्कैब)", "mr": "सफरचंदाचा खपली रोग"},
+        "description": "Fungal infection caused by Venturia inaequalis. Forms olive-green to dull black velvety lesions on leaves and dark scabby crusts on fruit.",
+        "symptoms": [
+            "Olive-green to black velvety spots on upper leaf surfaces",
+            "Crinkled, puckered, or distorted foliage",
+            "Premature yellowing and leaf defoliation",
+            "Corky, brownish scabs on maturing apples"
+        ],
+        "causes": "Ascomycete fungus Venturia inaequalis overwintering in fallen dead leaves.",
+        "favorable_conditions": "Cool (13–24°C), wet spring weather with prolonged leaf moisture for 6+ hours.",
+        "treatment_organic": [
+            "Spray Liquid Copper Soap (2-3 ml/L) or Bordeaux mixture (1%) at green tip stage",
+            "Apply Neem seed kernel extract (NSKE 5%) preventatively",
+            "Use bio-fungicide Bacillus subtilis (2 g/L) weekly during damp spells"
+        ],
+        "treatment_chemical": [
+            "Difenoconazole 25% EC @ 0.5 ml/L water at pink bud stage",
+            "Captan 50% WP @ 2.5 g/L or Mancozeb 75% WP @ 2.5 g/L during active leafing",
+            "Myclobutanil 10% WP @ 1 g/L after petal fall"
+        ],
+        "prevention": [
+            "Rake and destroy or compost fallen autumn leaves thoroughly to break the fungal cycle",
+            "Prune trees regularly in winter to improve sunlight penetration and air circulation",
+            "Plant resistant apple cultivars (e.g., Liberty, Prima, Freedom)"
+        ],
+        "management": ["Foliar fungicide schedule starting at bud break", "Sanitation of orchard floor"],
+        "monitoring": "Scout trees twice weekly after rain events during spring bud-burst.",
+        "escalation": "Severe defoliation weakens trees, stunting fruit production for 2 seasons."
+    },
+    {
+        "name": "Apple___Black_rot",
+        "display_name": "Apple Black Rot",
+        "crop": "Apple",
+        "regional_names": {"hi": "सेब का काला सड़न रोग", "mr": "सफरचंदाची काळी कूज"},
+        "description": "Caused by Botryosphaeria obtusa. Creates purple-bordered 'frog-eye' leaf spots, branch cankers, and completely black mummified apples.",
+        "symptoms": [
+            "Small purple specks expanding into circular 'frog-eye' spots with light brown centers",
+            "Sunken reddish-brown cankers on twigs and scaffold limbs",
+            "Fruit rot with concentric brown and black rings, eventually mummifying"
+        ],
+        "causes": "Botryosphaeria obtusa fungus surviving in dead wood and mummified fruit.",
+        "favorable_conditions": "Warm (20–27°C) humid environments with intermittent rain showers.",
+        "treatment_organic": [
+            "Spray Copper Oxychloride 50% WP (3 g/L) post-harvest and pre-bloom",
+            "Apply Trichoderma harzianum bio-agent around tree trunk bases"
+        ],
+        "treatment_chemical": [
+            "Thiophanate-methyl 70% WP @ 1 g/L water",
+            "Kresoxim-methyl 44.3% SC @ 1 ml/L applied every 10–14 days"
+        ],
+        "prevention": [
+            "Prune out dead, damaged, and cankered branches 15 cm below visible infection",
+            "Remove all mummified apples hanging from trees or resting on the ground"
+        ]
+    },
+    {
+        "name": "Apple___Cedar_apple_rust",
+        "display_name": "Apple Cedar Apple Rust",
+        "crop": "Apple",
+        "regional_names": {"hi": "सेब का गेरुई / रस्ट रोग", "mr": "सफरचंदाचा तांबेरा रोग"},
+        "description": "Gymnosporangium juniperi-virginianae rust fungus requiring two alternating hosts: apple trees and Eastern red cedar / juniper trees.",
+        "symptoms": [
+            "Bright yellow-orange spots on upper leaf surfaces appearing in spring",
+            "Orange spots enlarge and develop tiny black fungal specks",
+            "Cylindrical tube-like fungal aecia forming on the underside of infected leaves"
+        ],
+        "causes": "Airborne basidiospores blown from cedar galls during warm spring rains.",
+        "favorable_conditions": "Wet spring weather with temperatures between 12°C and 24°C.",
+        "treatment_organic": [
+            "Sulfur 80% WP @ 3 g/L sprayed preventatively prior to rain forecasts",
+            "Neem oil spray (5 ml/L) to suppress spore germination"
+        ],
+        "treatment_chemical": [
+            "Myclobutanil 10% WP @ 1 g/L applied from pink bud through petal fall",
+            "Tebuconazole 25.9% EC @ 1 ml/L water"
+        ],
+        "prevention": [
+            "Eradicate wild red cedar and juniper shrubs within a 500-meter radius of the orchard",
+            "Select resistant cultivars such as Enterprise, Redfree, or Liberty"
+        ]
+    },
+    {
+        "name": "Apple___healthy",
+        "display_name": "Healthy Apple Foliage",
+        "crop": "Apple",
+        "regional_names": {"hi": "स्वस्थ सेब का पौधा", "mr": "निरोगी सफरचंद झाड"},
+        "description": "Vibrant, unblemished apple leaves displaying optimal chlorophyll concentration and vigorous vegetative growth.",
+        "symptoms": ["Smooth, uniform dark green leaf surfaces", "No necrotic spotting, chlorosis, or curling"],
+        "causes": "Optimal nutrition, moisture, and pest management.",
+        "treatment_organic": ["Continue periodic seaweed extract (2 ml/L) foliar spray for micronutrients"],
+        "treatment_chemical": ["No fungicide intervention required. Routine preventative crop monitoring."],
+        "prevention": ["Maintain balanced N-P-K fertilization and drip irrigation schedule."]
+    },
+    {
+        "name": "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot",
+        "display_name": "Corn Gray Leaf Spot",
+        "crop": "Corn (Maize)",
+        "regional_names": {"hi": "मक्का का ग्रे लीफ स्पॉट रोग", "mr": "मक्याचा करपा / करडा ठिपका"},
+        "description": "Severe foliar disease caused by Cercospora zeae-maydis. Causes narrow rectangular lesions that run parallel to leaf veins.",
+        "symptoms": [
+            "Tan to gray rectangular lesions distinctly bounded by leaf veins",
+            "Lesions expand up to 5-7 cm, turning grayish under humid conditions",
+            "Extensive leaf blighting starting from lower leaves moving upward"
+        ],
+        "causes": "Cercospora zeae-maydis surviving in surface maize stubble and crop residue.",
+        "favorable_conditions": "High relative humidity (>90%) and warm temperatures (25–32°C).",
+        "treatment_organic": [
+            "Foliar spray of Trichoderma viride @ 5 g/L",
+            "Spray fermented cow urine (10%) mixed with neem oil (5 ml/L)"
+        ],
+        "treatment_chemical": [
+            "Azoxystrobin 18.2% + Difenoconazole 11.4% SC @ 1 ml/L water",
+            "Pyraclostrobin 20% WG @ 1 g/L or Propiconazole 25% EC @ 1 ml/L"
+        ],
+        "prevention": [
+            "Rotate crops for minimum 2 years with non-host legumes or cotton",
+            "Practice deep plowing to bury crop residue and accelerate decomposition"
+        ]
+    },
+    {
+        "name": "Corn_(maize)___Common_rust_",
+        "display_name": "Corn Common Rust",
+        "crop": "Corn (Maize)",
+        "regional_names": {"hi": "मक्का का रतुआ / गेरुई रोग", "mr": "मक्याचा तांबेरा रोग"},
+        "description": "Caused by Puccinia sorghi fungus. Forms characteristic cinnamon-brown powdery pustules on both upper and lower leaf surfaces.",
+        "symptoms": [
+            "Oval to elongate cinnamon-brown pustules on both sides of leaves",
+            "Pustules rupture the epidermis, releasing powdery rusty spores on fingers",
+            "Leaves turn chlorotic and desiccate prematurely under heavy infection"
+        ],
+        "causes": "Airborne spores carried by wind currents from southern growing regions.",
+        "favorable_conditions": "Cool to moderate temperatures (16–25°C) with high humidity and heavy dew.",
+        "treatment_organic": [
+            "Wettable sulfur 80% WDG @ 3 g/L applied upon first pustule appearance",
+            "Neem oil 1500 ppm @ 5 ml/L to inhibit urediniospore germination"
+        ],
+        "treatment_chemical": [
+            "Mancozeb 75% WP @ 2.5 g/L applied at early rust onset",
+            "Tebuconazole 25.9% EC @ 1 ml/L or Azoxystrobin @ 1 ml/L"
+        ],
+        "prevention": [
+            "Plant rust-resistant hybrid maize seed varieties",
+            "Avoid late planting to escape peak airborne spore load"
+        ]
+    },
+    {
+        "name": "Corn_(maize)___Northern_Leaf_Blight",
+        "display_name": "Corn Northern Leaf Blight",
+        "crop": "Corn (Maize)",
+        "regional_names": {"hi": "मक्का का उत्तरी पत्ता झुलसा", "mr": "मक्याचा तुषार रोग"},
+        "description": "Devastating foliar disease caused by Exserohilum turcicum. Produces large, elongated, cigar-shaped grayish-green lesions.",
+        "symptoms": [
+            "Large cigar-shaped, elliptical grayish-green or tan lesions (3–15 cm long)",
+            "Dark olive fungal sporulation visible on lesions during humid mornings",
+            "Severe canopy scorching and premature crop maturation"
+        ],
+        "causes": "Fungus Exserohilum turcicum overwintering in maize leaf debris.",
+        "favorable_conditions": "Moderate temperatures (18–27°C) accompanied by frequent rains and dews.",
+        "treatment_organic": [
+            "Bio-fungicide Pseudomonas fluorescens @ 5 g/L foliar spray",
+            "Panchagavya (3%) organic foliar spray to boost systemic plant immunity"
+        ],
+        "treatment_chemical": [
+            "Propiconazole 25% EC @ 1 ml/L water sprayed when lesions appear on 3rd leaf below ear",
+            "Mancozeb 75% WP @ 2.5 g/L spray repeated at 10-day intervals"
+        ],
+        "prevention": [
+            "Plant resistant hybrids featuring Ht-gene resistance",
+            "Adopt minimum 1-year non-host crop rotation"
+        ]
+    },
+    {
+        "name": "Corn_(maize)___healthy",
+        "display_name": "Healthy Corn Foliage",
+        "crop": "Corn (Maize)",
+        "regional_names": {"hi": "स्वस्थ मक्का की फसल", "mr": "निरोगी मका पीक"},
+        "description": "Vigorous maize canopy with deep green, wide leaves and strong stalk integrity.",
+        "symptoms": ["Uniform green leaf blade with distinct midrib and no fungal lesions"],
+        "causes": "Adequate nitrogen fertility, balanced moisture, and timely cultivation.",
+        "treatment_organic": ["Apply balanced vermicompost and liquid bio-fertilizers (Azotobacter)."],
+        "treatment_chemical": ["No intervention needed."],
+        "prevention": ["Ensure proper plant-to-plant spacing (20 cm) and row spacing (60 cm)."]
+    },
+    {
+        "name": "Grape___Black_rot",
+        "display_name": "Grape Black Rot",
+        "crop": "Grape",
+        "regional_names": {"hi": "अंगूर का ब्लैक रॉट (काला सड़न)", "mr": "द्राक्षांवरील काळी कूज"},
+        "description": "Guignardia bidwellii fungus that attacks leaves, shoots, and fruit clusters, turning grapes into hard, shriveled black mummies.",
+        "symptoms": [
+            "Reddish-brown circular leaf spots with dark borders and black fruiting specks (pycnidia)",
+            "Infected grape berries turn soft and brown, rapidly shriveling into wrinkled black mummies",
+            "Black elliptical lesions on green canes and tendrils"
+        ],
+        "causes": "Overwintered mummified berries and cane cankers release ascospores during rainfall.",
+        "favorable_conditions": "Warm (21–27°C) and wet weather with rain durations over 7 hours.",
+        "treatment_organic": [
+            "Bordeaux mixture (1%) or Copper Hydroxide (2 g/L) before flowering",
+            "Neem oil (5 ml/L) mixed with potassium bicarbonate (3 g/L)"
+        ],
+        "treatment_chemical": [
+            "Myclobutanil 10% WP @ 1 g/L applied from pre-bloom through 4 weeks post-bloom",
+            "Kresoxim-methyl 44.3% SC @ 0.75 ml/L water"
+        ],
+        "prevention": [
+            "Canopy management: canopy thinning and leaf pulling around fruit zone for air movement",
+            "Remove and bury all dried mummified grapes during winter pruning"
+        ]
+    },
+    {
+        "name": "Grape___Esca_(Black_Measles)",
+        "display_name": "Grape Esca (Black Measles)",
+        "crop": "Grape",
+        "regional_names": {"hi": "अंगूर का एस्का रोग", "mr": "द्राक्षांवरील एस्का रोग"},
+        "description": "Complex trunk and foliar disease caused by wood-decaying fungi (Phaeomoniella chlamydospora). Creates 'tiger-stripe' leaf patterns and spotted fruit.",
+        "symptoms": [
+            "'Tiger-stripe' pattern: yellow and brown interveinal necrosis bordered by chlorotic halos",
+            "Small dark spots ('measles') distributed across the grape skin",
+            "Sudden canopy collapse (apoplexy) during hot summer days"
+        ],
+        "causes": "Trunk fungal pathogens penetrating vine pruning wounds.",
+        "favorable_conditions": "Hot, dry conditions following wet springs.",
+        "treatment_organic": [
+            "Coat all winter pruning wounds with pruning sealants containing Trichoderma",
+            "Apply mycorrhizal inoculants to reinforce vine root health"
+        ],
+        "treatment_chemical": [
+            "Fosetyl-Al @ 2 g/L soil drench to bolster systemic vine defense",
+            "Pruning wound application of Thiophanate-methyl paste"
+        ],
+        "prevention": [
+            "Prune late in the dormant season when wound healing is rapid",
+            "Disinfect pruning shears regularly with 70% isopropyl alcohol"
+        ]
+    },
+    {
+        "name": "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+        "display_name": "Grape Leaf Blight",
+        "crop": "Grape",
+        "regional_names": {"hi": "अंगूर का पत्ती झुलसा रोग", "mr": "द्राक्षांवरील पान करपा"},
+        "description": "Phaeoisariopsis vitis foliar blight causing irregular brown patches that coalesce and lead to premature vine defoliation.",
+        "symptoms": [
+            "Irregular, angular reddish-brown necrotic spots on mature leaves",
+            "Sooty dark fungal growth on the underside of spots during high humidity",
+            "Extensive leaf shedding leaving grape bunches exposed to sunburn"
+        ],
+        "causes": "Fungus surviving in infected fallen vineyard leaf litter.",
+        "favorable_conditions": "High humidity (>85%) with moderate temperatures of 22–28°C.",
+        "treatment_organic": [
+            "Foliar spray of Copper Oxychloride 50% WP @ 2.5 g/L",
+            "Ampelomyces quisqualis bio-fungicide application"
+        ],
+        "treatment_chemical": [
+            "Carbendazim 50% WP @ 1 g/L or Mancozeb 75% WP @ 2.5 g/L",
+            "Difenoconazole 25% EC @ 0.5 ml/L"
+        ],
+        "prevention": [
+            "Clear and burn fallen infected leaf debris after harvest",
+            "Maintain wide trellis spacing for continuous airflow"
+        ]
+    },
+    {
+        "name": "Grape___healthy",
+        "display_name": "Healthy Grape Foliage",
+        "crop": "Grape",
+        "regional_names": {"hi": "स्वस्थ अंगूर का बाग", "mr": "निरोगी द्राक्ष बाग"},
+        "description": "Lush, emerald-green grape canopy with vigorous shoot growth and uniform fruit bunch development.",
+        "symptoms": ["Unblemished palmate leaves free from spots, powdery film, or leaf curl"],
+        "causes": "Balanced canopy management, targeted nutrition, and preventative care.",
+        "treatment_organic": ["Apply micronutrient foliar spray (Zinc, Boron) during berry development."],
+        "treatment_chemical": ["No chemical intervention required."],
+        "prevention": ["Maintain drip irrigation and canopy shoot positioning."]
+    },
+    {
+        "name": "Orange___Haunglongbing_(Citrus_greening)",
+        "display_name": "Citrus Greening (Huanglongbing)",
+        "crop": "Orange / Citrus",
+        "regional_names": {"hi": "सिट्रस ग्रीनिंग / पीला रोग", "mr": "संत्र्यांवरील सिट्रस ग्रीनिंग"},
+        "description": "Lethal bacterial disease caused by Candidatus Liberibacter asiaticus, transmitted by the Asian citrus psyllid. Destroys phloem vessels.",
+        "symptoms": [
+            "Asymmetric blotchy mottling on leaves crossing the central midrib",
+            "Yellowing of individual shoots or branches ('yellow dragon')",
+            "Small, lopsided fruit that remains green at the blossom end and tastes bitter",
+            "Small dark aborted seeds inside cut fruit"
+        ],
+        "causes": "Phloem-restricted bacterium spread by Diaphorina citri (Asian citrus psyllid) insect vectors.",
+        "favorable_conditions": "Active psyllid breeding seasons during new vegetative flushing periods.",
+        "treatment_organic": [
+            "Control psyllid vectors with botanical sprays: Neem oil (10,000 ppm) @ 3 ml/L",
+            "Release biological predators (Tamarixia radiata parasitoid wasps)",
+            "Nutritional foliar therapy: Zinc sulfate, iron chelate, and potassium phosphite"
+        ],
+        "treatment_chemical": [
+            "Imidacloprid 17.8% SL @ 0.5 ml/L or Thiamethoxam 25% WG @ 0.3 g/L to suppress psyllids",
+            "Dimethoate 30% EC @ 1.5 ml/L during new leaf flush"
+        ],
+        "prevention": [
+            "Plant only certified disease-free nursery rootstocks",
+            "Aggressively survey and rogue (remove and destroy) infected trees immediately"
+        ]
+    },
+    {
+        "name": "Potato___Early_blight",
+        "display_name": "Potato Early Blight",
+        "crop": "Potato",
+        "regional_names": {"hi": "आलू का अगेती झुलसा", "mr": "बटाट्यावरील लवकर येणारा करपा"},
+        "description": "Common foliar disease caused by Alternaria solani. Produces diagnostic dark brown circular spots with characteristic concentric rings ('target board').",
+        "symptoms": [
+            "Dark brown to black oval spots with concentric rings resembling a target board",
+            "Yellow chlorotic halos surrounding lesions",
+            "Lower, older foliage infected first, gradually progressing up the plant canopy",
+            "Dark, sunken, dry circular lesions on potato tubers"
+        ],
+        "causes": "Alternaria solani fungus surviving in solanaceous crop debris and volunteer potato plants.",
+        "favorable_conditions": "Warm temperatures (24–30°C) with alternating wet periods and dry periods.",
+        "treatment_organic": [
+            "Spray Copper Hydroxide 53.8% DF @ 2 g/L or Bordeaux mixture (1%)",
+            "Trichoderma viride @ 5 g/L with cow urine (10%) foliar drench",
+            "Bio-pesticide Bacillus amyloliquefaciens @ 2 ml/L"
+        ],
+        "treatment_chemical": [
+            "Mancozeb 75% WP @ 2.5 g/L sprayed preventatively",
+            "Azoxystrobin 23% SC @ 1 ml/L or Difenoconazole 25% EC @ 0.5 ml/L",
+            "Chlorothalonil 75% WP @ 2 g/L at 7–10 day spray intervals"
+        ],
+        "prevention": [
+            "Use certified disease-free seed tubers",
+            "Practice 3-year crop rotation avoiding other solanaceous crops (tomatoes, peppers)",
+            "Avoid overhead sprinkler irrigation; employ furrow or drip systems"
+        ]
+    },
+    {
+        "name": "Potato___Late_blight",
+        "display_name": "Potato Late Blight",
+        "crop": "Potato",
+        "regional_names": {"hi": "आलू का पछेती झुलसा", "mr": "बटाट्यावरील उशिरा येणारा करपा"},
+        "description": "High-risk oomycete pathogen Phytophthora infestans. Can completely destroy full potato fields within 7–10 days under cool, humid conditions.",
+        "symptoms": [
+            "Water-soaked, pale-green to dark brown lesions at leaf tips and margins",
+            "Delicate white cottony mildew growth on the undersides of infected leaves in moist mornings",
+            "Dark brown water-soaked lesions on stems and petioles",
+            "Granular, coppery-brown dry rot extending into tuber flesh"
+        ],
+        "causes": "Phytophthora infestans oomycete surviving in infected seed tubers and cull piles.",
+        "favorable_conditions": "Cool nights (10–15°C) and moderate days (15–21°C) with relative humidity above 90%.",
+        "treatment_organic": [
+            "Bordeaux mixture (1%) applied proactively every 5 days during overcast periods",
+            "Copper Oxychloride 50% WP @ 3 g/L preventatively",
+            "Garlic extract (5%) mixed with sour buttermilk (50 ml/L) foliar spray"
+        ],
+        "treatment_chemical": [
+            "Metalaxyl 8% + Mancozeb 64% WP (Ridomil MZ) @ 2.5 g/L curatively",
+            "Cymoxanil 8% + Mancozeb 64% WP @ 2 g/L",
+            "Dimethomorph 50% WP @ 1 g/L or Fenamidone 10% + Mancozeb 50% WG @ 2.5 g/L"
+        ],
+        "prevention": [
+            "Destroy all cull piles and volunteer potato sprouts before planting",
+            "Plant resistant potato varieties (e.g., Kufri Girdhari, Kufri Himalini)",
+            "Perform hill-up cultivation to provide thick soil coverage over developing tubers"
+        ]
+    },
+    {
+        "name": "Potato___healthy",
+        "display_name": "Healthy Potato Foliage",
+        "crop": "Potato",
+        "regional_names": {"hi": "स्वस्थ आलू की फसल", "mr": "निरोगी बटाटा पीक"},
+        "description": "Sturdy, lush dark-green potato canopy with dense foliage and active tuberization.",
+        "symptoms": ["Unblemished green foliage free from lesions, water-soaked margins, or curling"],
+        "causes": "Optimal soil moisture, balanced nutrition, and certified disease-free seed.",
+        "treatment_organic": ["Apply vermiwash foliar spray (50 ml/L) for sustained leaf vigor."],
+        "treatment_chemical": ["No fungicide intervention required."],
+        "prevention": ["Maintain consistent hilling and pest scouting."]
+    },
+    {
+        "name": "Tomato___Bacterial_spot",
+        "display_name": "Tomato Bacterial Spot",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर का जीवाणु धब्बा रोग", "mr": "टोमॅटोवरील जिवाणूजन्य ठिपके"},
+        "description": "Bacterial infection caused by Xanthomonas species. Causes small, dark water-soaked spots with yellow halos on leaves and raised scabby spots on fruit.",
+        "symptoms": [
+            "Small (less than 3 mm), dark, greasy or water-soaked circular spots on leaves",
+            "Spots turn brown to black with prominent chlorotic yellow halos",
+            "Severe leaf scorch and defoliation during rainy periods",
+            "Raised, blister-like brown scabby spots on tomato fruits"
+        ],
+        "causes": "Xanthomonas perforans and Xanthomonas euvesicatoria bacteria.",
+        "favorable_conditions": "High temperatures (24–30°C) combined with frequent splashing rains or overhead irrigation.",
+        "treatment_organic": [
+            "Copper Hydroxide 53.8% DF (2 g/L) combined with Bacillus subtilis bio-agent",
+            "Spray Streptomyces-based bio-bactericide @ 2 g/L"
+        ],
+        "treatment_chemical": [
+            "Streptocycline (Streptomycin sulphate + Tetracycline) @ 0.1 g/L mixed with Copper Oxychloride 50% WP @ 2.5 g/L",
+            "Kasugamycin 3% SL @ 2 ml/L water"
+        ],
+        "prevention": [
+            "Treat seeds with hot water (50°C for 25 minutes) before sowing",
+            "Eliminate overhead sprinkler irrigation; strictly use ground drip lines",
+            "Disinfect stakes, trellises, and harvest crates with 10% bleach"
+        ]
+    },
+    {
+        "name": "Tomato___Early_blight",
+        "display_name": "Tomato Early Blight",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर का अगेती झुलसा", "mr": "टोमॅटोवरील लवकर येणारा करपा"},
+        "description": "Fungal disease caused by Alternaria solani. Produces dark brown target-board circular spots with concentric rings, primarily attacking older leaves.",
+        "symptoms": [
+            "Circular dark brown to black spots with concentric rings (target pattern)",
+            "Yellow chlorosis spreading outward from leaf lesions",
+            "Stem cankers ('collar rot') near ground level on seedlings",
+            "Sunken, leathery dark lesions at the fruit stem calyx end"
+        ],
+        "causes": "Alternaria solani fungus surviving in solanaceous weeds and crop residue.",
+        "favorable_conditions": "Warm (24–29°C) weather with high humidity or alternating wet-dry periods.",
+        "treatment_organic": [
+            "Copper Oxychloride 50% WP @ 2.5 g/L or Bordeaux mixture (1%)",
+            "Trichoderma harzianum @ 5 g/L foliar spray every 10 days",
+            "Neem oil (5 ml/L) mixed with liquid soap as sticker"
+        ],
+        "treatment_chemical": [
+            "Mancozeb 75% WP @ 2.5 g/L sprayed at first sight of lower leaf spots",
+            "Chlorothalonil 75% WP @ 2 g/L or Difenoconazole 25% EC @ 0.5 ml/L",
+            "Azoxystrobin 18.2% + Difenoconazole 11.4% SC @ 1 ml/L"
+        ],
+        "prevention": [
+            "Prune off lower 30 cm of leaves once plants reach maturity to prevent soil-splash inoculation",
+            "Apply straw or plastic mulch beneath plants to block fungal spores",
+            "Stake plants to maximize air circulation"
+        ]
+    },
+    {
+        "name": "Tomato___Late_blight",
+        "display_name": "Tomato Late Blight",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर का पछेती झुलसा", "mr": "टोमॅटोवरील उशिरा येणारा करपा"},
+        "description": "Aggressive, destructive oomycete disease caused by Phytophthora infestans. Forms large water-soaked greasy patches and white fuzzy mildew.",
+        "symptoms": [
+            "Large, irregularly shaped greasy water-soaked lesions on leaves and stems",
+            "White fungal-like cottony mildew on leaf undersides in wet morning dew",
+            "Stems develop dark brown to black lesions that cause branches to snap",
+            "Firm, greasy, olive-brown blotches on green or ripening tomato fruits"
+        ],
+        "causes": "Phytophthora infestans spreading rapidly via wind-borne sporangia.",
+        "favorable_conditions": "Cool nights (10–15°C) and warm days (15–22°C) with persistent humidity >85%.",
+        "treatment_organic": [
+            "Copper Hydroxide @ 2.5 g/L sprayed preventatively prior to cloudy rain fronts",
+            "Bordeaux mixture (1%) sprayed thoroughly coating upper and lower leaf surfaces",
+            "Bio-control formulation: Bacillus subtilis (2 g/L) + Trichoderma viride (5 g/L)"
+        ],
+        "treatment_chemical": [
+            "Cymoxanil 8% + Mancozeb 64% WP @ 2.5 g/L curatively at first symptom",
+            "Metalaxyl-M 4% + Mancozeb 64% WP (Ridomil Gold) @ 2.5 g/L",
+            "Dimethomorph 50% WP @ 1 g/L or Mandipropamid 23.4% SC @ 0.8 ml/L"
+        ],
+        "prevention": [
+            "Maintain wide plant spacing (60 cm x 90 cm) for fast canopy drying",
+            "Avoid overhead watering; use drip lines exclusively",
+            "Immediately bag and remove severely infected plants (do not compost)"
+        ]
+    },
+    {
+        "name": "Tomato___Leaf_Mold",
+        "display_name": "Tomato Leaf Mold",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर का पत्ता फफूंद रोग", "mr": "टोमॅटोवरील पानावरील बुरशी"},
+        "description": "Fungal disease caused by Passalora fulva (Cladosporium fulvum). Forms pale greenish-yellow spots on upper leaf surfaces and velvety olive mold below.",
+        "symptoms": [
+            "Pale yellow spots with indistinct margins on upper surface of older leaves",
+            "Olive-green to velvety brown mold growth on corresponding undersides of leaves",
+            "Infected leaves turn completely yellow, curl, and wither"
+        ],
+        "causes": "Passalora fulva fungus flourishing in greenhouse and polyhouse environments.",
+        "favorable_conditions": "High relative humidity (85% to 95%) and warm temperatures (21–24°C).",
+        "treatment_organic": [
+            "Spray Copper Hydroxide (2 g/L) or Potassium Bicarbonate (3 g/L)",
+            "Neem cake extract (5%) foliar spray"
+        ],
+        "treatment_chemical": [
+            "Chlorothalonil 75% WP @ 2 g/L or Mancozeb 75% WP @ 2.5 g/L",
+            "Azoxystrobin 23% SC @ 1 ml/L"
+        ],
+        "prevention": [
+            "Maximize greenhouse ventilation with exhaust fans to reduce humidity below 80%",
+            "Increase plant spacing and prune excess vegetative suckers"
+        ]
+    },
+    {
+        "name": "Tomato___Septoria_leaf_spot",
+        "display_name": "Tomato Septoria Leaf Spot",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर का सेप्टोरिया पत्ता धब्बा", "mr": "टोमॅटोवरील सेप्टोरिया ठिपके"},
+        "description": "Severe foliar disease caused by Septoria lycopersici. Produces numerous tiny, circular spots with dark brown margins and sunken grayish-white centers.",
+        "symptoms": [
+            "Numerous small circular spots (2-3 mm) with dark brown edges and pale gray centers",
+            "Tiny black pepper-like specks (pycnidia) embedded in spot centers",
+            "Leaves turn yellow and drop prematurely from the ground up, exposing fruit to sunscald"
+        ],
+        "causes": "Septoria lycopersici fungus overwintering on solanaceous weeds (nightshade).",
+        "favorable_conditions": "Warm temperatures (20–25°C) coupled with high humidity and rain-splash.",
+        "treatment_organic": [
+            "Spray Liquid Copper Soap or Copper Oxychloride 50% WP @ 2.5 g/L",
+            "Apply Bio-fungicide Trichoderma viride @ 5 g/L"
+        ],
+        "treatment_chemical": [
+            "Chlorothalonil 75% WP @ 2 g/L applied every 7–10 days",
+            "Mancozeb 75% WP @ 2.5 g/L or Tebuconazole 25.9% EC @ 1 ml/L"
+        ],
+        "prevention": [
+            "Apply organic straw mulch around plant base to inhibit soil splash",
+            "Control horsenettle and black nightshade weeds around the field",
+            "Practice minimum 2-year crop rotation"
+        ]
+    },
+    {
+        "name": "Tomato___Spider_mites Two-spotted_spider_mite",
+        "display_name": "Tomato Two-Spotted Spider Mite",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर की लाल मकड़ी (माइट)", "mr": "टोमॅटोवरील लाल कोळी"},
+        "description": "Tiny arachnid pest (Tetranychus urticae) that punctures plant cells to suck sap, causing yellow stippling and dense silken webbing.",
+        "symptoms": [
+            "Fine yellow or white speckling/stippling across the upper leaf surface",
+            "Fine, silken webbing visible on leaf undersides and shoot growing tips",
+            "Leaves turn bronze or grayish-brown, dry up, and drop under heavy infestation"
+        ],
+        "causes": "Tetranychus urticae mites multiplying rapidly in dusty, dry, hot environments.",
+        "favorable_conditions": "Hot, arid, dry weather (temperatures above 30°C) with low humidity.",
+        "treatment_organic": [
+            "Strong water hose spray to dislodge mites and disrupt web colonies",
+            "Neem oil 1500 ppm @ 5 ml/L mixed with botanical soap",
+            "Introduce predatory mites: Phytoseiulus persimilis or Neoseiulus californicus"
+        ],
+        "treatment_chemical": [
+            "Abamectin 1.9% EC @ 0.5 ml/L water",
+            "Spiromesifen 22.9% SC @ 1 ml/L or Propargite 57% EC @ 2 ml/L",
+            "Fenazaquin 10% EC @ 1.5 ml/L"
+        ],
+        "prevention": [
+            "Keep soil well-irrigated to reduce drought stress in plants",
+            "Maintain vegetative groundcover to minimize dust deposition on foliage",
+            "Avoid excessive broad-spectrum pyrethroid sprays that destroy natural predatory mites"
+        ]
+    },
+    {
+        "name": "Tomato___Target_Spot",
+        "display_name": "Tomato Target Spot",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर का टारगेट स्पॉट", "mr": "टोमॅटोवरील टार्गेट स्पॉट"},
+        "description": "Fungal infection caused by Corynespora cassiicola. Forms pinpoint brown spots that expand into brown circular lesions with concentric rings.",
+        "symptoms": [
+            "Small brown circular spots expanding into target-like concentric rings",
+            "Lesions develop yellow halos and rupture leaf tissue in centers",
+            "Depressed dark brown spots with circular fissures on ripe tomato fruits"
+        ],
+        "causes": "Corynespora cassiicola fungus.",
+        "favorable_conditions": "Warm (25–30°C) and humid weather with long leaf wetness periods.",
+        "treatment_organic": [
+            "Copper Hydroxide @ 2 g/L applied every 7-10 days",
+            "Bio-agent Bacillus subtilis foliar application"
+        ],
+        "treatment_chemical": [
+            "Azoxystrobin 18.2% + Difenoconazole 11.4% SC @ 1 ml/L",
+            "Boscalid + Pyraclostrobin @ 1.5 g/L"
+        ],
+        "prevention": [
+            "Improve air flow by staking and pruning suckers",
+            "Avoid overhead irrigation and rotate crops regularly"
+        ]
+    },
+    {
+        "name": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+        "display_name": "Tomato Yellow Leaf Curl Virus (TYLCV)",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर का पीला पत्ता मरोड़ रोग (पर्ण कुंचन)", "mr": "टोमॅटोवरील पर्णगुच्छ / चुरडा-मुरडा"},
+        "description": "Devastating viral disease transmitted by the silverleaf whitefly (Bemisia tabaci). Causes severe plant stunting, cupped yellow leaves, and total fruit abort.",
+        "symptoms": [
+            "Marked upward curling and cupping of leaflets ('spoon-like')",
+            "Prominent yellow chlorosis on leaf margins and interveinal areas",
+            "Severe plant stunting with shortened internodes giving a bushy appearance",
+            "Excessive flower drop; plants set few or no harvestable fruits"
+        ],
+        "causes": "Begomovirus (Tomato Yellow Leaf Curl Virus) transmitted by whiteflies.",
+        "favorable_conditions": "Hot, dry conditions that favor explosive whitefly population surges.",
+        "treatment_organic": [
+            "Install yellow sticky traps (25 traps/acre) at canopy height to capture whiteflies",
+            "Spray Neem oil (10,000 ppm) @ 3 ml/L or Verticillium lecanii bio-agent (5 g/L)",
+            "Cover young seedlings in nursery with 50-mesh insect-proof netting"
+        ],
+        "treatment_chemical": [
+            "Diafenthiuron 50% WP @ 1 g/L or Spirotetramat 15.31% OD @ 1 ml/L",
+            "Thiamethoxam 25% WG @ 0.3 g/L or Acetamiprid 20% SP @ 0.4 g/L for vector control"
+        ],
+        "prevention": [
+            "Plant TYLCV-resistant hybrid tomato seed varieties",
+            "Rogue out and destroy viral-infected plants at first detection"
+        ]
+    },
+    {
+        "name": "Tomato___Tomato_mosaic_virus",
+        "display_name": "Tomato Mosaic Virus (ToMV)",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर का मोज़ेक वायरस", "mr": "टोमॅटो मोजॅक व्हायरस"},
+        "description": "Tobamovirus causing distinctive light and dark green mosaic patterns, distorted fern-like leaves, and internal browning of fruit.",
+        "symptoms": [
+            "Alternating dark green and yellowish-green mosaic mottling on leaves",
+            "Leaf distortion: narrowing, blistering, and fern-like 'shoestring' leaves",
+            "Uneven fruit ripening with internal brown vascular necrosis ('brown wall')"
+        ],
+        "causes": "Tomato mosaic tobamovirus spread easily by human hands, tools, and tobacco products.",
+        "favorable_conditions": "Transmitted mechanically through contact, pruning shears, and infected seed coats.",
+        "treatment_organic": [
+            "Wash hands and tools in non-fat dry milk solution (20%) or trisodium phosphate (10%)",
+            "Remove and incinerate symptomatic plants immediately"
+        ],
+        "treatment_chemical": [
+            "No chemical viricide exists. Treatment focuses on sanitation and weed control."
+        ],
+        "prevention": [
+            "Disallow smoking or tobacco handling inside tomato greenhouses",
+            "Purchase certified virus-tested seeds",
+            "Disinfect pruning scissors in 10% bleach between plants"
+        ]
+    },
+    {
+        "name": "Tomato___healthy",
+        "display_name": "Healthy Tomato Foliage",
+        "crop": "Tomato",
+        "regional_names": {"hi": "स्वस्थ टमाटर की फसल", "mr": "निरोगी टोमॅटो पीक"},
+        "description": "Lush, dark emerald tomato leaf canopy demonstrating optimal cellular turgor, robust photosynthesis, and active flowering/fruiting.",
+        "symptoms": ["Vibrant green composite leaves with no chlorotic spots, blights, or leaf curling"],
+        "causes": "Balanced nutrition (NPK + Calcium), adequate drip watering, and pest scouting.",
+        "treatment_organic": ["Apply balanced seaweed extract (2 ml/L) and humic acid to sustain vigour."],
+        "treatment_chemical": ["No chemical treatment needed."],
+        "prevention": ["Maintain consistent drip irrigation to prevent blossom end rot and foliar disease."]
+    },
+    {
+        "name": "Pepper,_bell___Bacterial_spot",
+        "display_name": "Bell Pepper Bacterial Spot",
+        "crop": "Pepper (Bell)",
+        "regional_names": {"hi": "शिमला मिर्च का जीवाणु धब्बा रोग", "mr": "ढोबळी मिरचीवरील जिवाणूजन्य ठिपके"},
+        "description": "Caused by Xanthomonas campestris pv. vesicatoria. Creates small circular water-soaked lesions that turn necrotic, causing heavy defoliation.",
+        "symptoms": [
+            "Small water-soaked circular spots on leaves turning purplish-black",
+            "Spots develop sunken brown centers with distinct yellow halos",
+            "Blister-like raised rough warty spots on pepper fruits"
+        ],
+        "causes": "Seed-borne bacterium Xanthomonas campestris.",
+        "favorable_conditions": "Warm temperatures (24–30°C) with high humidity and rain-splatter.",
+        "treatment_organic": [
+            "Spray Copper Hydroxide (2 g/L) + Bacillus subtilis (2 g/L)",
+            "Neem oil spray (5 ml/L) to deter insect wounding"
+        ],
+        "treatment_chemical": [
+            "Streptocycline @ 0.1 g/L combined with Copper Oxychloride @ 2.5 g/L",
+            "Kasugamycin 3% SL @ 2 ml/L"
+        ],
+        "prevention": [
+            "Use certified clean seed and resistant bell pepper cultivars",
+            "Use drip irrigation to prevent splashing bacteria onto leaves"
+        ]
+    },
+    {
+        "name": "Pepper,_bell___healthy",
+        "display_name": "Healthy Bell Pepper Foliage",
+        "crop": "Pepper (Bell)",
+        "regional_names": {"hi": "स्वस्थ शिमला मिर्च", "mr": "निरोगी ढोबळी मिरची"},
+        "description": "Robust, glossy green bell pepper foliage with healthy blossoms and thick-walled fruit set.",
+        "symptoms": ["Glossy, uniform green leaves without blemishes, spots, or leaf puckering"],
+        "causes": "Optimal fertigation and microclimate control.",
+        "treatment_organic": ["Apply calcium-boron micronutrient spray to strengthen fruit walls."],
+        "treatment_chemical": ["No chemical intervention needed."],
+        "prevention": ["Maintain regular scouting and drip line filtration."]
+    },
+    {
+        "name": "Squash___Powdery_mildew",
+        "display_name": "Squash Powdery Mildew",
+        "crop": "Squash / Cucurbits",
+        "regional_names": {"hi": "कद्दू / तोरई का चूर्णिल आसिता (पाउडरी मिल्ड्यू)", "mr": "भोपळ्यावरील भुरी रोग"},
+        "description": "Ubiquitous fungal infection caused by Podosphaera xanthii. Coats leaves in talcum-powder-like white fungal colonies.",
+        "symptoms": [
+            "White talcum-powder-like fungal patches on both upper and lower leaf surfaces",
+            "Patches coalesce into a continuous white powdery blanket",
+            "Infected leaves turn yellow, brown, and brittle, withering prematurely",
+            "Fruit matures prematurely with reduced sugar content and sunscald"
+        ],
+        "causes": "Podosphaera xanthii and Erysiphe cichoracearum fungi.",
+        "favorable_conditions": "Warm temperatures (20–27°C) with shade and dry air, requiring only high night humidity.",
+        "treatment_organic": [
+            "Baking soda / Potassium bicarbonate (5 g/L) with vegetable oil and mild soap",
+            "Diluted milk spray (10% milk in 90% water) exposed to sunlight",
+            "Wettable sulfur 80% WDG @ 3 g/L or bio-fungicide Ampelomyces quisqualis"
+        ],
+        "treatment_chemical": [
+            "Hexaconazole 5% SC @ 1 ml/L or Myclobutanil 10% WP @ 1 g/L",
+            "Azoxystrobin 23% SC @ 1 ml/L or Tebuconazole 25.9% EC @ 1 ml/L"
+        ],
+        "prevention": [
+            "Plant powdery-mildew resistant squash varieties",
+            "Ensure full sun exposure and wide spacing for good air drainage"
+        ]
+    },
+    {
+        "name": "Tomato___Anthracnose",
+        "display_name": "Tomato Anthracnose",
+        "crop": "Tomato",
+        "regional_names": {"hi": "टमाटर का एन्थ्रेक्नोज (काला धब्बा रोग)", "mr": "टोमॅटोवरील अँथ्रॅकनोज (करपा रोग)"},
+        "description": "Fungal infection caused by Colletotrichum coccodes and Colletotrichum gloeosporioides. Causes circular, sunken, water-soaked necrotic lesions on foliage and ripening fruits.",
+        "symptoms": [
+            "Circular, sunken, water-soaked necrotic spots on leaf blades and fruits",
+            "Concentric rings of dark fungal fruiting bodies (acervuli)",
+            "Salmon-pink or orange gelatinous spore masses under warm, humid conditions",
+            "Shot-hole appearance where dead central tissue dries and falls out"
+        ],
+        "causes": "Colletotrichum coccodes / Colletotrichum gloeosporioides fungal spores spread by splashing rain and overhead irrigation.",
+        "favorable_conditions": "Warm temperatures (24–30°C) with prolonged leaf wetness or relative humidity exceeding 85%.",
+        "treatment_organic": [
+            "Spray Liquid Copper Hydroxide (2.5 g/L) or Bordeaux mixture (1%) thoroughly",
+            "Apply bio-agent Trichoderma viride @ 5 g/L as a preventive foliar spray",
+            "Neem seed kernel extract (NSKE 5%) to inhibit early fungal spore germination"
+        ],
+        "treatment_chemical": [
+            "Azoxystrobin 23% SC @ 1.0 ml/L water curatively at earliest symptom onset",
+            "Difenoconazole 25% EC @ 0.5 ml/L water applied in 10-day rotation",
+            "Chlorothalonil 75% WP @ 2.0 g/L or Mancozeb 75% WP @ 2.5 g/L protective spray"
+        ],
+        "prevention": [
+            "Avoid overhead sprinkler irrigation; use drip irrigation to keep foliage dry",
+            "Mulch beneath plants to prevent soil-splash carrying fungal spores onto lower leaves",
+            "Practice 3-year crop rotation away from solanaceous crops (potatoes, peppers)",
+            "Collect and destroy infected plant debris immediately"
+        ]
+    },
+    {
+        "name": "Pepper,_bell___Anthracnose",
+        "display_name": "Pepper Anthracnose",
+        "crop": "Pepper, bell",
+        "regional_names": {"hi": "शिमला मिर्च का एन्थ्रेक्नोज (फल गलन)", "mr": "ढोबळी मिरचीवरील अँथ्रॅकनोज"},
+        "description": "Destructive fungal disease caused by Colletotrichum spp. producing circular sunken water-soaked necrotic lesions on leaves and dark concentric fruit rots.",
+        "symptoms": [
+            "Circular to oval sunken necrotic lesions with water-soaked edges",
+            "Concentric rings of dark fungal spores with salmon-pink centers",
+            "Dieback of growing shoot tips in advanced stages"
+        ],
+        "causes": "Colletotrichum acutatum / Colletotrichum capsici fungal complex.",
+        "favorable_conditions": "High humidity (>80%) and temperatures between 26–32°C.",
+        "treatment_organic": [
+            "Apply Copper Oxychloride 50% WP @ 3.0 g/L preventatively",
+            "Spray Trichoderma harzianum @ 5 g/L around plant canopy"
+        ],
+        "treatment_chemical": [
+            "Azoxystrobin 18.2% + Difenoconazole 11.4% SC @ 1.0 ml/L water",
+            "Tebuconazole 25.9% EC @ 1.0 ml/L at initial lesion appearance"
+        ],
+        "prevention": [
+            "Use certified disease-free pepper seeds treated with Thiram (2.5 g/kg)",
+            "Maintain raised beds with plastic mulch to minimize soil splash"
+        ]
+    },
+    {
+        "name": "Pulses___Anthracnose",
+        "display_name": "Pulses Anthracnose",
+        "crop": "Pulses",
+        "regional_names": {"hi": "दालों का एन्थ्रेक्नोज रोग", "mr": "कडधान्यांवरील अँथ्रॅकनोज रोग"},
+        "description": "Fungal disease caused by Colletotrichum lindemuthianum affecting beans, gram, moong, and urad. Causes prominent dark brown to black sunken cankers.",
+        "symptoms": [
+            "Dark brown to black sunken circular lesions on leaves and pods",
+            "Brick-red to black discoloration along lower leaf veins",
+            "Yellowing, withering, and premature leaf drop"
+        ],
+        "causes": "Colletotrichum lindemuthianum seed-borne and air-borne fungus.",
+        "favorable_conditions": "Cool to moderate temperatures (17–24°C) with high relative humidity.",
+        "treatment_organic": [
+            "Seed treatment with Trichoderma viride @ 10 g/kg seed",
+            "Foliar spray of Cow urine concoction (Gomutra 10%) or Bordeaux mixture (1%)"
+        ],
+        "treatment_chemical": [
+            "Carbendazim 50% WP @ 1.0 g/L or Mancozeb 75% WP @ 2.5 g/L foliar spray",
+            "Propiconazole 25% EC @ 1.0 ml/L at first flowering or symptom appearance"
+        ],
+        "prevention": [
+            "Sow disease-free certified pulse seeds",
+            "Destroy crop residues after harvest and rotate with cereals"
+        ]
+    }
+]
+
+
+
+async def seed():
+    """Seed the database with complete disease knowledge and demo data."""
+    print("Initializing CropSakha AI Knowledge Base Seeder...")
+    from apps.api.database import engine, Base
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+
+
+    # 1. Write full diseases.json
+    data_dir = os.path.join(project_root, "data", "knowledge")
+    os.makedirs(data_dir, exist_ok=True)
+    json_path = os.path.join(data_dir, "diseases.json")
+
+    # Generate full schema with UUIDs
+    full_disease_records = []
+    for d in ALL_DISEASES:
+        rec = dict(d)
+        rec["id"] = str(uuid.uuid5(uuid.NAMESPACE_DNS, rec["name"]))
+        full_disease_records.append(rec)
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(full_disease_records, f, indent=2, ensure_ascii=False)
+    print(f"Saved {len(full_disease_records)} disease profiles to {json_path}")
+
+    # 2. Seed database
+    async with async_session() as db:
+        # Check existing count
+        res = await db.execute(select(Disease))
+        existing_diseases = {d.name: d for d in res.scalars().all()}
+
+        added_count = 0
+        for d in full_disease_records:
+            if d["name"] not in existing_diseases:
+                new_d = Disease(
+                    id=uuid.UUID(d["id"]),
+                    name=d["name"],
+                    display_name=d["display_name"],
+                    crop=d["crop"],
+                    description=d.get("description"),
+                    symptoms=d.get("symptoms", []),
+                    causes=d.get("causes"),
+                    favorable_conditions=d.get("favorable_conditions"),
+                    prevention=d.get("prevention", []),
+                    management=d.get("management", []),
+                    treatment_organic=d.get("treatment_organic", []),
+                    treatment_chemical=d.get("treatment_chemical", []),
+                    regional_names=d.get("regional_names", {}),
+                    monitoring=d.get("monitoring"),
+                    escalation=d.get("escalation")
+                )
+                db.add(new_d)
+                added_count += 1
+            else:
+                # Update existing record
+                ex = existing_diseases[d["name"]]
+                ex.display_name = d["display_name"]
+                ex.crop = d["crop"]
+                ex.description = d.get("description")
+                ex.symptoms = d.get("symptoms", [])
+                ex.causes = d.get("causes")
+                ex.favorable_conditions = d.get("favorable_conditions")
+                ex.prevention = d.get("prevention", [])
+                ex.management = d.get("management", [])
+                ex.treatment_organic = d.get("treatment_organic", [])
+                ex.treatment_chemical = d.get("treatment_chemical", [])
+                ex.regional_names = d.get("regional_names", {})
+
+        # 3. Seed Demo User
+        demo_email = "demo@cropsakha.ai"
+        user_res = await db.execute(select(User).where(User.email == demo_email))
+        demo_user = user_res.scalar_one_or_none()
+
+        if not demo_user:
+            demo_user = User(
+                id=uuid.uuid4(),
+                name="Ramesh Patil (Demo Farmer)",
+                email=demo_email,
+                password_hash=get_password_hash("cropsakha123"),
+                preferred_language="en",
+                role=UserRole.USER
+            )
+            db.add(demo_user)
+            await db.flush()
+            print(f"Created demo farmer account: {demo_email} (Password: cropsakha123)")
+
+        # 4. Seed sample scan history for the demo user if none exists
+        scans_res = await db.execute(select(CropScan).where(CropScan.user_id == demo_user.id))
+        existing_scans = scans_res.scalars().all()
+
+        if len(existing_scans) == 0:
+            print("Seeding sample scan history for demo user...")
+            sample_scans = [
+                {
+                    "crop": "Tomato",
+                    "disease": "Late Blight",
+                    "pred": "Tomato___Late_blight",
+                    "conf": 0.94,
+                    "healthy": False,
+                    "severity": 0.35,
+                    "label": "Moderate Infection",
+                    "days_ago": 1
+                },
+                {
+                    "crop": "Potato",
+                    "disease": "Early Blight",
+                    "pred": "Potato___Early_blight",
+                    "conf": 0.89,
+                    "healthy": False,
+                    "severity": 0.20,
+                    "label": "Mild Infection",
+                    "days_ago": 3
+                },
+                {
+                    "crop": "Corn (Maize)",
+                    "disease": "healthy",
+                    "pred": "Corn_(maize)___healthy",
+                    "conf": 0.97,
+                    "healthy": True,
+                    "severity": 0.0,
+                    "label": "Healthy (No Infection)",
+                    "days_ago": 5
+                },
+                {
+                    "crop": "Apple",
+                    "disease": "Apple Scab",
+                    "pred": "Apple___Apple_scab",
+                    "conf": 0.92,
+                    "healthy": False,
+                    "severity": 0.42,
+                    "label": "Severe Infection",
+                    "days_ago": 8
+                }
+            ]
+
+            for s in sample_scans:
+                scan = CropScan(
+                    id=uuid.uuid4(),
+                    user_id=demo_user.id,
+                    image_path="/demo/sample_leaf.jpg",
+                    image_original_name=f"{s['crop'].lower()}_field_scan.jpg",
+                    model_version="LeafVision 2.0",
+                    model_architecture="LeafVision DINO / CV Saliency",
+                    primary_prediction=s["pred"],
+                    primary_crop=s["crop"],
+                    primary_disease=s["disease"],
+                    confidence=s["conf"],
+                    confidence_level=ConfidenceLevel.HIGH,
+                    is_healthy=s["healthy"],
+                    quality_score=0.95,
+                    quality_pass=True,
+                    quality_issues=[],
+                    severity_estimate=s["severity"],
+                    severity_label=s["label"],
+                    created_at=datetime.utcnow() - timedelta(days=s["days_ago"])
+                )
+                db.add(scan)
+                await db.flush()
+
+                # Add prediction record
+                pred = Prediction(
+                    id=uuid.uuid4(),
+                    scan_id=scan.id,
+                    label=s["pred"],
+                    crop_name=s["crop"],
+                    disease_name=s["disease"],
+                    rank=1,
+                    confidence=s["conf"]
+                )
+                db.add(pred)
+
+        await db.commit()
+        print(f"Database seeded successfully! (Added {added_count} diseases).")
+
+
+if __name__ == "__main__":
+    asyncio.run(seed())

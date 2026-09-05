@@ -1,0 +1,64 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Next.js / Node
+node_modules/
+.next/
+out/
+build/
+.swc/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Deep Learning / ML Models
+*.h5
+*.pth
+*.pt
+*.onnx
+*.weights
+LeafVision/
+models/
+backend/crop_disease_model.h5
+
+# Datasets
+dataset/PlantVillage-Dataset/
+dataset/*.zip
+data/
+uploads/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
