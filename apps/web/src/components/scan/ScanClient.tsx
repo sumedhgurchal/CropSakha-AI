@@ -6,7 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { getToken } from '@/lib/auth';
 import GeminiAssistant from '@/components/ai/GeminiAssistant';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = '/api';
 
 // Removed DEMO_SAMPLES
 

@@ -15,7 +15,7 @@ export default function OutbreakMap({ cropFilter = 'All', severityFilter = 'All'
 
   useEffect(() => {
     setLoading(true);
-    let url = 'http://localhost:8000/maps/outbreaks';
+    let url = '/api/maps/outbreaks';
     const params = new URLSearchParams();
     if (cropFilter !== 'All') params.append('crop', cropFilter);
     if (severityFilter !== 'All') params.append('severity', severityFilter);

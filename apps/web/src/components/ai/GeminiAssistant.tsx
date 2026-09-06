@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = '/api';
 
 export default function GeminiAssistant({ context = "" }: { context?: string }) {
   const { language } = useI18n();

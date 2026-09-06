@@ -19,7 +19,7 @@ export default function DiseasesPage() {
     const fetchDiseases = async () => {
       try {
         setLoading(true);
-        let url = 'http://localhost:8000/diseases/';
+        let url = '/api/diseases/';
         const params = new URLSearchParams();
         if (selectedCrop !== 'All') params.append('crop', selectedCrop);
         if (searchQuery.trim()) params.append('search', searchQuery.trim());
