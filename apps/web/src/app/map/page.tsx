@@ -35,7 +35,7 @@ export default function MapPage() {
             ● Live Epidemic Surveillance
           </div>
           <h1>Geospatial Outbreak Tracking Radar</h1>
-          <p>Real-time regional telemetry of reported fungal, bacterial, and viral crop pathogen vectors across India.</p>
+          <p>Real-time regional telemetry of reported fungal, bacterial, and viral crop pathogen vectors globally.</p>
         </div>
 
         {/* Telemetry Stat Cards */}
