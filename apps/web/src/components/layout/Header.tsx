@@ -6,7 +6,7 @@ import { Camera, BookOpen, Map, LayoutDashboard, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { isAuthenticated, removeToken } from '@/lib/auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, LANGUAGE_NAMES, Language } from '@/lib/i18n';
 
 export default function Header() {
   const router = useRouter();
@@ -112,13 +112,13 @@ export default function Header() {
             <span style={{ fontSize: '0.75rem', fontWeight: 700, marginRight: '0.3rem', color: 'var(--text-muted)' }}>🌐</span>
             <select 
               value={language} 
-              onChange={(e) => setLanguage(e.target.value as any)}
-              style={{ fontSize: '0.85rem', fontWeight: 600, border: 'none', backgroundColor: 'transparent', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none' }}
+              onChange={(e) => setLanguage(e.target.value as Language)}
+              style={{ fontSize: '0.85rem', fontWeight: 600, border: 'none', backgroundColor: 'transparent', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none', maxWidth: '100px' }}
               aria-label="Select Language"
             >
-              <option value="en">English</option>
-              <option value="hi">हिन्दी (Hindi)</option>
-              <option value="mr">मराठी (Marathi)</option>
+              {Object.entries(LANGUAGE_NAMES).map(([code, name]) => (
+                <option key={code} value={code}>{name}</option>
+              ))}
             </select>
           </div>
         </nav>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import { useI18n } from '@/lib/i18n';
+import { Camera, Map } from 'lucide-react';
 
 export default function Home() {
   const { t } = useI18n();
@@ -34,11 +35,11 @@ export default function Home() {
           </p>
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/scan" className="btn-primary" style={{ padding: '0.85rem 2rem', fontSize: '1.05rem' }}>
-              📸 Start Leaf Diagnosis
+            <Link href="/scan" className="btn-primary" style={{ padding: '0.85rem 2rem', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Camera size={20} /> Start Leaf Diagnosis
             </Link>
-            <Link href="/map" className="btn-secondary" style={{ padding: '0.85rem 2rem', fontSize: '1.05rem' }}>
-              🗺️ View Outbreak Radar
+            <Link href="/map" className="btn-secondary" style={{ padding: '0.85rem 2rem', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Map size={20} /> View Outbreak Radar
             </Link>
           </div>
 

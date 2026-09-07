@@ -5,11 +5,9 @@ import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { getToken } from '@/lib/auth';
 import GeminiAssistant from '@/components/ai/GeminiAssistant';
+import { UploadCloud, CheckCircle2, Zap, BrainCircuit, VolumeX, Volume2, Scale, Sprout, Leaf, ShieldAlert, List, BarChart3, Map, Microscope, Loader2, FlaskConical } from 'lucide-react';
 
 const API_URL = '/api';
-
-// Removed DEMO_SAMPLES
-
 
 export default function ScanClient() {
   const { language } = useI18n();
@@ -102,6 +100,7 @@ export default function ScanClient() {
       if (selectedCrop && selectedCrop !== 'Auto-detect') {
         formData.append('crop', selectedCrop);
       }
+      formData.append('lang', language);
 
 
       const headers: Record<string, string> = {};
@@ -144,26 +143,19 @@ export default function ScanClient() {
     let textToSpeak = result.audio_text || `${result.prediction.crop} ${result.prediction.disease}`;
     
     // Check if we have Gemini translations for the current language
-    if (result.gemini_prescriptions) {
-        if (language === 'hi' && result.gemini_prescriptions.hindi) {
-             textToSpeak = `संक्रमण का पता चला: ${result.display_name}. उपाय: ${result.gemini_prescriptions.hindi.biological}. ${result.gemini_prescriptions.hindi.chemical}`;
-        } else if (language === 'mr' && result.gemini_prescriptions.marathi) {
-             textToSpeak = `संसर्ग आढळला: ${result.display_name}. उपाय: ${result.gemini_prescriptions.marathi.biological}. ${result.gemini_prescriptions.marathi.chemical}`;
-        } else if (result.gemini_prescriptions.english) {
-             textToSpeak = `Detected ${result.display_name}. Recommendation: ${result.gemini_prescriptions.english.biological}. ${result.gemini_prescriptions.english.chemical}`;
-        }
+    if (result.gemini_prescriptions && result.gemini_prescriptions.biological) {
+         textToSpeak = `${result.display_name}. ${result.gemini_prescriptions.biological}. ${result.gemini_prescriptions.chemical}`;
     }
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
     // Pick voice language
-    if (language === 'hi') {
-      utterance.lang = 'hi-IN';
-    } else if (language === 'mr') {
-      utterance.lang = 'mr-IN';
-    } else {
-      utterance.lang = 'en-US';
-    }
+    const voiceLangMap: Record<string, string> = {
+      'en': 'en-IN', 'hi': 'hi-IN', 'mr': 'mr-IN', 'bn': 'bn-IN',
+      'te': 'te-IN', 'ta': 'ta-IN', 'gu': 'gu-IN', 'ur': 'ur-IN',
+      'kn': 'kn-IN', 'ml': 'ml-IN', 'pa': 'pa-IN'
+    };
+    utterance.lang = voiceLangMap[language] || 'hi-IN';
     utterance.rate = 0.95;
 
     utterance.onend = () => setIsSpeaking(false);
@@ -183,7 +175,7 @@ export default function ScanClient() {
   return (
     <div className="scan-client">
 
-      <div className="upload-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
+      <div className="upload-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', alignItems: 'start' }}>
         
         {/* Left Column: Upload / Leaf Preview & Grad-CAM */}
         <div className="card">
@@ -231,7 +223,7 @@ export default function ScanClient() {
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <span className="dropzone-icon">🍃</span>
+              <span className="dropzone-icon" style={{ display: 'inline-block', marginBottom: '0.5rem', color: 'var(--accent)' }}><UploadCloud size={48} /></span>
               <h3 style={{ marginBottom: '0.5rem', fontSize: '1.15rem' }}>
                 Drag and drop your crop leaf image here
               </h3>
@@ -295,11 +287,11 @@ export default function ScanClient() {
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button 
                     className="btn-primary" 
-                    style={{ flex: 1 }} 
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} 
                     onClick={analyzeImage}
                     disabled={loading || result !== null}
                   >
-                    {loading ? '⚙️ Running Vision Analysis...' : result ? '✓ Analysis Complete' : '⚡ Run Diagnosis'}
+                    {loading ? <><Loader2 size={18} className="animate-spin" /> Running Vision Analysis...</> : result ? <><CheckCircle2 size={18} /> Analysis Complete</> : <><Zap size={18} /> Run Diagnosis</>}
                   </button>
                   <button 
                     className="btn-secondary" 
@@ -322,10 +314,10 @@ export default function ScanClient() {
                     </button>
                     <button
                       className="tab-btn"
-                      style={{ flex: 1, textAlign: 'center', borderRadius: 'var(--radius-sm)', backgroundColor: showXAI ? 'var(--accent-light)' : 'transparent', color: showXAI ? 'var(--accent)' : 'inherit', fontWeight: showXAI ? 700 : 500, boxShadow: showXAI ? 'var(--shadow-sm)' : 'none' }}
+                      style={{ flex: 1, textAlign: 'center', borderRadius: 'var(--radius-sm)', backgroundColor: showXAI ? 'var(--accent-light)' : 'transparent', color: showXAI ? 'var(--accent)' : 'inherit', fontWeight: showXAI ? 700 : 500, boxShadow: showXAI ? 'var(--shadow-sm)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
                       onClick={() => setShowXAI(true)}
                     >
-                      🧠 Explainable AI Heatmap
+                      <BrainCircuit size={16} /> Explainable AI Heatmap
                     </button>
                   </div>
                 )}
@@ -344,7 +336,7 @@ export default function ScanClient() {
         <div className="card" style={{ minHeight: '440px' }}>
           {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '380px', textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1.25rem', animation: 'spin 2s linear infinite' }}>⚙️</div>
+              <div style={{ marginBottom: '1.25rem', color: 'var(--accent)' }}><Loader2 size={48} className="animate-spin" /></div>
               <h3 style={{ marginBottom: '0.5rem' }}>Analyzing Crop Health...</h3>
               <p className="text-small" style={{ maxWidth: '320px' }}>
                 Executing quality assessment, lesion segmentation, and foundation model inference...
@@ -368,13 +360,13 @@ export default function ScanClient() {
                   )}
                 </div>
 
-                {/* Audio Voice Advisory Button */}
                 <button 
                   onClick={speakDiagnosis} 
                   className="btn-audio"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                   title="Listen to diagnosis in selected language"
                 >
-                  <span>{isSpeaking ? '⏹️' : '🔊'}</span>
+                  {isSpeaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
                   <span>{isSpeaking ? 'Stop Audio' : 'Listen Advice'}</span>
                 </button>
               </div>
@@ -420,15 +412,15 @@ export default function ScanClient() {
               {result.biomass && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.25rem', padding: '0.75rem 1rem', background: '#F0FDF4', borderRadius: 'var(--radius-md)', border: '1px solid #BBF7D0' }}>
                   <div>
-                    <span style={{ fontSize: '0.72rem', color: '#166534', display: 'block', fontWeight: 600 }}>⚖️ Est. Fresh Biomass</span>
+                    <span style={{ fontSize: '0.72rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}><Scale size={12} /> Est. Fresh Biomass</span>
                     <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#15803D' }}>{result.biomass.fresh_biomass_grams} g</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.72rem', color: '#166534', display: 'block', fontWeight: 600 }}>🌾 Projected Yield</span>
+                    <span style={{ fontSize: '0.72rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}><Sprout size={12} /> Projected Yield</span>
                     <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#15803D' }}>{result.biomass.projected_yield_tonnes_per_hectare} T/Ha</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.72rem', color: '#166534', display: 'block', fontWeight: 600 }}>🌿 Canopy Cover</span>
+                    <span style={{ fontSize: '0.72rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}><Leaf size={12} /> Canopy Cover</span>
                     <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#15803D' }}>{result.biomass.canopy_cover_percentage}%</span>
                   </div>
                 </div>
@@ -438,33 +430,38 @@ export default function ScanClient() {
               <div className="tab-nav">
                 <button 
                   className={`tab-btn ${activeTab === 'organic' ? 'active' : ''}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                   onClick={() => setActiveTab('organic')}
                 >
-                  🌿 Organic Cure
+                  <Leaf size={16} /> Organic Cure
                 </button>
                 <button 
                   className={`tab-btn ${activeTab === 'chemical' ? 'active' : ''}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                   onClick={() => setActiveTab('chemical')}
                 >
-                  💊 Chemical Control
+                  <FlaskConical size={16} /> Chemical Control
                 </button>
                 <button 
                   className={`tab-btn ${activeTab === 'biomass' ? 'active' : ''}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                   onClick={() => setActiveTab('biomass')}
                 >
-                  ⚖️ Weight & Yield
+                  <Scale size={16} /> Weight & Yield
                 </button>
                 <button 
                   className={`tab-btn ${activeTab === 'prevention' ? 'active' : ''}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                   onClick={() => setActiveTab('prevention')}
                 >
-                  🛡️ Prevention
+                  <ShieldAlert size={16} /> Prevention
                 </button>
                 <button 
                   className={`tab-btn ${activeTab === 'symptoms' ? 'active' : ''}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                   onClick={() => setActiveTab('symptoms')}
                 >
-                  📋 Symptoms
+                  <List size={16} /> Symptoms
                 </button>
               </div>
 
@@ -475,8 +472,8 @@ export default function ScanClient() {
                   <div className="tab-pane active fade-in">
                     <h4 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>Recommended Biological & Organic Treatments:</h4>
                     <ul className="info-list" style={{ color: 'var(--text-secondary)' }}>
-                      {result.gemini_prescriptions && result.gemini_prescriptions[language === 'hi' ? 'hindi' : language === 'mr' ? 'marathi' : 'english'] ? (
-                          <li>{result.gemini_prescriptions[language === 'hi' ? 'hindi' : language === 'mr' ? 'marathi' : 'english'].biological}</li>
+                      {result.gemini_prescriptions && result.gemini_prescriptions.biological ? (
+                          <li>{result.gemini_prescriptions.biological}</li>
                       ) : result.treatment_organic?.length > 0 ? (
                         result.treatment_organic.map((item: string, i: number) => <li key={i}>{item}</li>)
                       ) : <li>Apply standard botanical extracts or consult local agronomist.</li>}
@@ -488,8 +485,8 @@ export default function ScanClient() {
                   <div className="tab-pane active fade-in">
                     <h4 style={{ color: '#D97706', marginBottom: '0.5rem' }}>Chemical Fungicide & Pesticide Protocols:</h4>
                     <ul className="info-list" style={{ color: 'var(--text-secondary)' }}>
-                      {result.gemini_prescriptions && result.gemini_prescriptions[language === 'hi' ? 'hindi' : language === 'mr' ? 'marathi' : 'english'] ? (
-                          <li>{result.gemini_prescriptions[language === 'hi' ? 'hindi' : language === 'mr' ? 'marathi' : 'english'].chemical}</li>
+                      {result.gemini_prescriptions && result.gemini_prescriptions.chemical ? (
+                          <li>{result.gemini_prescriptions.chemical}</li>
                       ) : result.treatment_chemical?.length > 0 ? (
                         result.treatment_chemical.map((item: string, i: number) => <li key={i}>{item}</li>)
                       ) : <li>Apply standard protective fungicide or consult local agronomist.</li>}
@@ -596,12 +593,12 @@ export default function ScanClient() {
               )}
 
               {/* Quick links to Dashboard and Map */}
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-                <Link href="/dashboard" className="btn-secondary" style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                  📊 View in Dashboard
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                <Link href="/dashboard" className="btn-secondary" style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <BarChart3 size={16} /> View in Dashboard
                 </Link>
-                <Link href="/map" className="btn-secondary" style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                  🗺️ Check Outbreak Map
+                <Link href="/map" className="btn-secondary" style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <Map size={16} /> Check Outbreak Map
                 </Link>
               </div>
 
@@ -610,7 +607,7 @@ export default function ScanClient() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '380px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <span style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🔬</span>
+              <div style={{ marginBottom: '1rem', color: 'var(--text-muted)', opacity: 0.5 }}><Microscope size={64} /></div>
               <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Awaiting Crop Leaf</h3>
               <p className="text-small" style={{ maxWidth: '300px' }}>
                 Upload or select a demo sample leaf above to view disease classification, explainable Grad-CAM heatmaps, and agronomic cures.

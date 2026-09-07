@@ -76,6 +76,7 @@ async def analyze_crop(
     request: Request,
     file: UploadFile = File(...),
     crop: Optional[str] = Form(None),
+    lang: Optional[str] = Form('en'),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -130,18 +131,28 @@ async def analyze_crop(
     symptoms = (disease_info.symptoms or []) if disease_info else []
     regional_names = (disease_info.regional_names or {}) if disease_info else {}
 
+    language_map = {
+        'en': 'English', 'hi': 'Hindi', 'mr': 'Marathi', 'ta': 'Tamil', 'te': 'Telugu',
+        'bn': 'Bengali', 'gu': 'Gujarati', 'kn': 'Kannada', 'ml': 'Malayalam', 'pa': 'Punjabi',
+        'or': 'Odia', 'ur': 'Urdu', 'as': 'Assamese', 'sa': 'Sanskrit', 'ne': 'Nepali',
+        'ks': 'Kashmiri', 'sd': 'Sindhi', 'kok': 'Konkani', 'mni': 'Manipuri', 'brx': 'Bodo',
+        'doi': 'Dogri', 'mai': 'Maithili', 'sat': 'Santali'
+    }
+    target_lang_name = language_map.get(lang, 'English')
+
     # Gemini Dual-Action Prescriptions (Multilingual)
     severity_label = inference_result.get("severity_label", "moderate")
     prescriptions = await gemini_service.generate_prescriptions(
         crop=primary["crop"],
         disease=display_name,
-        severity=severity_label
+        severity=severity_label,
+        target_lang=target_lang_name
     )
     
-    treatment_organic = [prescriptions.get("english", {}).get("biological", "Apply botanical neem oil.")]
-    treatment_chemical = [prescriptions.get("english", {}).get("chemical", "Apply recommended protective fungicide.")]
+    treatment_organic = [prescriptions.get("biological", "Apply botanical neem oil.")]
+    treatment_chemical = [prescriptions.get("chemical", "Apply recommended protective fungicide.")]
     
-    # Store the multilingual payload for the frontend to use in TTS
+    # Store the single-language payload for the frontend
     multilingual_prescriptions = prescriptions
 
     # 4. Construct voice audio guidance text
@@ -234,7 +245,11 @@ async def analyze_crop(
             crop_name=primary["crop"],
             severity_score=inference_result.get("severity_estimate", 0.0) or 0.0
         )
-        biomass_data = await gemini_service.enhance_biomass_estimation(primary["crop"], base_biomass)
+        try:
+            biomass_data = await gemini_service.enhance_biomass_estimation(primary["crop"], base_biomass)
+        except Exception as e:
+            print(f"Gemini biomass enhancement failed (likely quota limit), falling back to base: {e}")
+            biomass_data = base_biomass
     except Exception as e:
         print(f"Biomass estimation notice: {e}")
         biomass_data = None

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
+import ReactMarkdown from 'react-markdown';
+import { Sparkles, Send, Mic } from 'lucide-react';
 
 const API_URL = '/api';
 
@@ -10,6 +12,25 @@ export default function GeminiAssistant({ context = "" }: { context?: string }) 
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser does not support voice input.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = language === 'en' ? 'en-US' : `${language}-IN`;
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(prev => prev + " " + transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognition.start();
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -41,7 +62,7 @@ export default function GeminiAssistant({ context = "" }: { context?: string }) 
   return (
     <div className="card" style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', minHeight: '300px', maxHeight: '400px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
-        <span style={{ fontSize: '1.5rem' }}>✨</span>
+        <Sparkles size={22} color="var(--accent)" />
         <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Gemini AI Assistant</h3>
       </div>
       
@@ -60,9 +81,16 @@ export default function GeminiAssistant({ context = "" }: { context?: string }) 
             borderRadius: 'var(--radius-md)',
             maxWidth: '85%',
             fontSize: '0.9rem',
-            lineHeight: 1.5
+            lineHeight: 1.5,
+            overflowWrap: 'break-word'
           }}>
-            {msg.content}
+            {msg.role === 'assistant' ? (
+              <div className="markdown-body">
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
+              </div>
+            ) : (
+              msg.content
+            )}
           </div>
         ))}
         {loading && (
@@ -72,7 +100,25 @@ export default function GeminiAssistant({ context = "" }: { context?: string }) 
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <button
+          onClick={startListening}
+          title="Voice Input"
+          style={{
+            padding: '0.65rem',
+            borderRadius: 'var(--radius-full)',
+            backgroundColor: isListening ? '#EF4444' : '#F1F5F9',
+            color: isListening ? '#FFF' : 'var(--text-secondary)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            animation: isListening ? 'pulse 1.5s infinite' : 'none'
+          }}
+        >
+          <Mic size={20} />
+        </button>
         <input 
           type="text" 
           value={input}
@@ -91,9 +137,13 @@ export default function GeminiAssistant({ context = "" }: { context?: string }) 
             color: '#FFF', 
             border: 'none', 
             cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
             opacity: loading || !input.trim() ? 0.7 : 1
           }}
         >
+          <Send size={16} />
           Send
         </button>
       </div>

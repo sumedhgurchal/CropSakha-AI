@@ -19,9 +19,9 @@ class GeminiService:
         else:
             logger.warning("GEMINI_API_KEY is not set. Gemini features will be disabled.")
 
-    async def generate_prescriptions(self, crop: str, disease: str, severity: str) -> Dict[str, Any]:
+    async def generate_prescriptions(self, crop: str, disease: str, severity: str, target_lang: str = "English") -> Dict[str, Any]:
         """
-        Generates Dual-Action Prescriptions (Biological and Chemical) in multiple languages.
+        Generates Dual-Action Prescriptions (Biological and Chemical) in the specified language.
         """
         if not self.is_configured:
             return self._get_fallback_prescriptions(crop, disease)
@@ -33,20 +33,10 @@ class GeminiService:
         Provide a highly accurate, Dual-Action Prescription.
         Return the output EXACTLY as a JSON object with this structure:
         {{
-            "english": {{
-                "biological": "Organic/Biological remedy details with dosage",
-                "chemical": "Chemical fungicide/pesticide details with exact dilution dosages"
-            }},
-            "hindi": {{
-                "biological": "...",
-                "chemical": "..."
-            }},
-            "marathi": {{
-                "biological": "...",
-                "chemical": "..."
-            }}
+            "biological": "Organic/Biological remedy details with dosage translated into {target_lang}",
+            "chemical": "Chemical fungicide/pesticide details with exact dilution dosages translated into {target_lang}"
         }}
-        Make sure the language translations are completely fluent and use appropriate agricultural terminology.
+        Make sure the language translation is completely fluent in {target_lang} and uses appropriate agricultural terminology.
         Do NOT wrap the output in markdown code blocks, just raw JSON.
         """
         
@@ -124,18 +114,8 @@ class GeminiService:
 
     def _get_fallback_prescriptions(self, crop: str, disease: str) -> Dict[str, Any]:
         return {
-            "english": {
-                "biological": "Apply Neem oil (10,000 ppm) at 2ml/litre water. Spray early morning.",
-                "chemical": "Spray Copper Oxychloride 50% WP at 2.5g/litre water if symptoms persist."
-            },
-            "hindi": {
-                "biological": "नीम का तेल (10,000 ppm) 2ml/लीटर पानी में मिलाकर सुबह जल्दी छिड़काव करें।",
-                "chemical": "यदि लक्षण बने रहते हैं तो कॉपर ऑक्सीक्लोराइड 50% WP का 2.5g/लीटर पानी में छिड़काव करें।"
-            },
-            "marathi": {
-                "biological": "निंबोळी अर्क (10,000 ppm) 2 मिली/लिटर पाण्यात मिसळून सकाळी लवकर फवारणी करा.",
-                "chemical": "लक्षणे राहिल्यास कॉपर ऑक्सीक्लोराईड ५०% WP २.५ ग्रॅम/लिटर पाण्यात मिसळून फवारा."
-            }
+            "biological": "Apply Neem oil (10,000 ppm) at 2ml/litre water. Spray early morning.",
+            "chemical": "Spray Copper Oxychloride 50% WP at 2.5g/litre water if symptoms persist."
         }
 
 gemini_service = GeminiService()
