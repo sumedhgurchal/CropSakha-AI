@@ -4,15 +4,39 @@ CropSakha AI — SQLAlchemy ORM Models
 
 import uuid
 from datetime import datetime
+from sqlalchemy.types import CHAR, TypeDecorator
 from sqlalchemy import (
     Column, String, Integer, Float, Boolean, Text, DateTime, 
     ForeignKey, Enum as SQLEnum, JSON
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
 
 from ..database import Base
+
+
+class UUIDType(TypeDecorator):
+    """Store UUIDs safely in SQLite while retaining native UUIDs on PostgreSQL."""
+
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
+            return dialect.type_descriptor(PostgreSQLUUID(as_uuid=True))
+        return dialect.type_descriptor(CHAR(36))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        value = value if isinstance(value, uuid.UUID) else uuid.UUID(str(value))
+        return value if dialect.name == "postgresql" else str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None or isinstance(value, uuid.UUID):
+            return value
+        return uuid.UUID(str(value))
 
 
 class UserRole(str, enum.Enum):
@@ -29,7 +53,7 @@ class ConfidenceLevel(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
@@ -47,8 +71,8 @@ class User(Base):
 class Crop(Base):
     __tablename__ = "crops"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUIDType(), ForeignKey("users.id"), nullable=False)
     name = Column(String(100), nullable=False)
     field_name = Column(String(200), nullable=True)
     notes = Column(Text, nullable=True)
@@ -62,9 +86,9 @@ class Crop(Base):
 class CropScan(Base):
     __tablename__ = "crop_scans"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    crop_id = Column(UUID(as_uuid=True), ForeignKey("crops.id"), nullable=True)
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUIDType(), ForeignKey("users.id"), nullable=False)
+    crop_id = Column(UUIDType(), ForeignKey("crops.id"), nullable=True)
     image_path = Column(String(500), nullable=False)
     image_original_name = Column(String(255), nullable=True)
 
@@ -102,8 +126,8 @@ class CropScan(Base):
 class Prediction(Base):
     __tablename__ = "predictions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    scan_id = Column(UUID(as_uuid=True), ForeignKey("crop_scans.id"), nullable=False)
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
+    scan_id = Column(UUIDType(), ForeignKey("crop_scans.id"), nullable=False)
     label = Column(String(200), nullable=False)
     crop_name = Column(String(100), nullable=True)
     disease_name = Column(String(200), nullable=True)
@@ -117,7 +141,7 @@ class Prediction(Base):
 class Disease(Base):
     __tablename__ = "diseases"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
     name = Column(String(200), nullable=False, unique=True)
     display_name = Column(String(200), nullable=False)
     crop = Column(String(100), nullable=False, index=True)
@@ -141,7 +165,7 @@ class Disease(Base):
 class ModelVersion(Base):
     __tablename__ = "model_versions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
     name = Column(String(200), nullable=False)
     version = Column(String(50), nullable=False)
     architecture = Column(String(100), nullable=False)
@@ -156,9 +180,9 @@ class ModelVersion(Base):
 class Feedback(Base):
     __tablename__ = "feedback"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    scan_id = Column(UUID(as_uuid=True), ForeignKey("crop_scans.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
+    scan_id = Column(UUIDType(), ForeignKey("crop_scans.id"), nullable=False)
+    user_id = Column(UUIDType(), ForeignKey("users.id"), nullable=False)
     is_correct = Column(Boolean, nullable=True)
     correct_disease = Column(String(200), nullable=True)
     notes = Column(Text, nullable=True)

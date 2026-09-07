@@ -99,7 +99,7 @@ async def analyze_crop(
 
     # 2. Real Deep Learning Inference & Explainable AI (Grad-CAM)
     try:
-        colab_url = request.headers.get("x-colab-url")
+        colab_url = request.headers.get("x-colab-url") or settings.inference_service_url
         inference_result = inference_service.predict(
             image_bytes, 
             filename=file.filename or "", 

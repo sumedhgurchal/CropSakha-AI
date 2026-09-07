@@ -36,7 +36,7 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
     headers,
   };
 
-  const response = await fetch(`http://localhost:8000${endpoint}`, config);
+  const response = await fetch(endpoint, config);
   
   if (response.status === 401) {
     removeToken();

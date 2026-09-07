@@ -26,6 +26,7 @@ class Settings(BaseSettings):
 
     # ML Model
     ml_model_type: str = "auto"  # auto | leafvision | mobilenet
+    inference_service_url: Optional[str] = None
     ml_confidence_high: float = 0.80
     ml_confidence_medium: float = 0.50
     ml_confidence_low: float = 0.30
