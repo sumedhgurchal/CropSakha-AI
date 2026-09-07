@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, BookOpen, Map, LayoutDashboard, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { isAuthenticated, removeToken } from '@/lib/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import { useI18n, LANGUAGE_NAMES, Language } from '@/lib/i18n';
+import { Globe } from 'lucide-react';
 
 export default function Header() {
   const router = useRouter();
@@ -29,91 +29,118 @@ export default function Header() {
   return (
     <header className="site-header">
       <div className="container header-content">
-        <Link href="/" className="brand-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Image src="/logo.jpg" alt="CropSakha Logo" width={32} height={32} style={{ borderRadius: '6px' }} />
-          <span>CropSakha AI</span>
+        <Link href="/" className="brand-logo">
+          <Image src="/logo.jpg" alt="CropSakha Logo" width={30} height={30} style={{ borderRadius: '8px' }} />
+          <span>CropSakha</span>
+          <span style={{
+            fontSize: '0.6rem',
+            fontWeight: 700,
+            textTransform: 'uppercase' as const,
+            letterSpacing: '0.06em',
+            background: 'var(--accent-light)',
+            color: 'var(--accent)',
+            padding: '0.15rem 0.45rem',
+            borderRadius: 'var(--radius-full)',
+            border: '1px solid var(--accent-border)',
+          }}>AI</span>
         </Link>
+
         <nav className="nav-links">
-          <Link 
-            href="/scan" 
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '0.4rem',
-              color: isActive('/scan') ? 'var(--accent)' : undefined, 
-              backgroundColor: isActive('/scan') ? 'var(--accent-light)' : undefined 
+          <Link
+            href="/scan"
+            style={{
+              color: isActive('/scan') ? 'var(--accent)' : undefined,
+              fontWeight: isActive('/scan') ? 600 : undefined,
             }}
           >
-            <Camera size={16} /> {t('nav.scan')}
+            {t('nav.scan')}
           </Link>
-          <Link 
+          <Link
             href="/diseases"
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '0.4rem',
-              color: isActive('/diseases') ? 'var(--accent)' : undefined, 
-              backgroundColor: isActive('/diseases') ? 'var(--accent-light)' : undefined 
+            style={{
+              color: isActive('/diseases') ? 'var(--accent)' : undefined,
+              fontWeight: isActive('/diseases') ? 600 : undefined,
             }}
           >
-            <BookOpen size={16} /> {t('nav.library')}
+            {t('nav.library')}
           </Link>
-          <Link 
+          <Link
             href="/map"
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '0.4rem',
-              color: isActive('/map') ? 'var(--accent)' : undefined, 
-              backgroundColor: isActive('/map') ? 'var(--accent-light)' : undefined 
+            style={{
+              color: isActive('/map') ? 'var(--accent)' : undefined,
+              fontWeight: isActive('/map') ? 600 : undefined,
             }}
           >
-            <Map size={16} /> {t('nav.map')}
+            {t('nav.map')}
           </Link>
-          
+
           {isLoggedIn ? (
             <>
-              <Link 
-                href="/dashboard" 
-                style={{ 
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  fontWeight: 700, 
-                  color: isActive('/dashboard') ? 'var(--accent)' : 'var(--text-primary)',
-                  backgroundColor: isActive('/dashboard') ? 'var(--accent-light)' : undefined
+              <Link
+                href="/dashboard"
+                style={{
+                  color: isActive('/dashboard') ? 'var(--accent)' : undefined,
+                  fontWeight: isActive('/dashboard') ? 600 : undefined,
                 }}
               >
-                <LayoutDashboard size={16} /> {t('nav.dashboard')}
+                {t('nav.dashboard')}
               </Link>
-              <Link 
+              <Link
                 href="/history"
-                style={{ 
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  color: isActive('/history') ? 'var(--accent)' : undefined, 
-                  backgroundColor: isActive('/history') ? 'var(--accent-light)' : undefined 
+                style={{
+                  color: isActive('/history') ? 'var(--accent)' : undefined,
+                  fontWeight: isActive('/history') ? 600 : undefined,
                 }}
               >
-                <Clock size={16} /> {t('nav.history')}
+                {t('nav.history')}
               </Link>
-              <button 
-                onClick={handleLogout} 
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  color: 'var(--text-secondary)', 
-                  fontWeight: 600, 
+              <button
+                onClick={handleLogout}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  fontWeight: 500,
                   cursor: 'pointer',
-                  padding: '0.4rem 0.6rem'
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 {t('nav.logout')}
               </button>
             </>
           ) : (
-            <Link href="/login" className="btn-secondary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.88rem' }}>
+            <Link href="/login" className="btn-dark" style={{ padding: '0.5rem 1.25rem', fontSize: '0.88rem' }}>
               {t('nav.signin')}
             </Link>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', marginLeft: '0.5rem', background: '#F1F5F9', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, marginRight: '0.3rem', color: 'var(--text-muted)' }}>🌐</span>
-            <select 
-              value={language} 
+          {/* Language Selector */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginLeft: '0.35rem',
+            background: 'var(--bg-white)',
+            padding: '0.25rem 0.55rem',
+            borderRadius: 'var(--radius-full)',
+            border: '1px solid var(--border)',
+          }}>
+            <Globe size={13} color="var(--text-muted)" style={{ marginRight: '0.3rem', flexShrink: 0 }} />
+            <select
+              value={language}
               onChange={(e) => setLanguage(e.target.value as Language)}
-              style={{ fontSize: '0.85rem', fontWeight: 600, border: 'none', backgroundColor: 'transparent', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none', maxWidth: '100px' }}
+              style={{
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                outline: 'none',
+                maxWidth: '90px',
+              }}
               aria-label="Select Language"
             >
               {Object.entries(LANGUAGE_NAMES).map(([code, name]) => (

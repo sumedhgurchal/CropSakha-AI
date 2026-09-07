@@ -175,18 +175,18 @@ export default function ScanClient() {
   return (
     <div className="scan-client">
 
-      <div className="upload-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+      <div className="upload-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.75rem', alignItems: 'start' }}>
         
         {/* Left Column: Upload / Leaf Preview & Grad-CAM */}
-        <div className="card">
+        <div className="card-glass">
           {/* Crop Type Filter Selector */}
           <div style={{ marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                🌱 Monitored Crop Species:
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Crop Species Filter
               </span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600 }}>
-                {selectedCrop === 'Auto-detect' ? '🌐 All 38 Classes' : `Target: ${selectedCrop}`}
+              <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600 }}>
+                {selectedCrop === 'Auto-detect' ? 'All 38 Classes' : selectedCrop}
               </span>
             </div>
             <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
@@ -333,7 +333,7 @@ export default function ScanClient() {
         </div>
 
         {/* Right Column: Diagnosis & Prescriptions */}
-        <div className="card" style={{ minHeight: '440px' }}>
+        <div className="card-glass" style={{ minHeight: '440px' }}>
           {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '380px', textAlign: 'center' }}>
               <div style={{ marginBottom: '1.25rem', color: 'var(--accent)' }}><Loader2 size={48} className="animate-spin" /></div>
@@ -538,7 +538,11 @@ export default function ScanClient() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-small">Biomass metrics calculation in progress...</p>
+                      <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)' }}>
+                        <Sprout size={36} color="var(--accent)" style={{ marginBottom: '0.75rem', opacity: 0.5 }} />
+                        <p className="text-small" style={{ fontWeight: 600 }}>Biomass data not available for this scan.</p>
+                        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>CSIRO engine requires a clear overhead canopy image.</p>
+                      </div>
                     )}
                   </div>
                 )}
