@@ -4,11 +4,16 @@
 
 **CropSakha AI** is an advanced, globally scaled Agricultural Intelligence platform. It leverages state-of-the-art Deep Learning (PyTorch ResNet-50) alongside Computer Vision (OpenCV) morphological fallback engines to diagnose crop diseases, estimate plant biomass, and track geopolitical pathogen outbreaks in real-time.
 
+### 🌐 Live MVP Deployment
+You can access the live web application on Vercel:
+**[Launch CropSakha AI on Vercel](https://cropsakha-ai.vercel.app)**
+
 ## ✨ Core Features
+- **Comprehensive 24 Indian Languages Support**: The UI and diagnosis engine dynamically adapt to all 24 official Indian languages (Schedule VIII) allowing for truly localized agricultural guidance.
+- **Multilingual Voice Interaction (STT & TTS)**: Farmers can click a microphone to speak their symptoms directly (Voice Input) and listen to agronomic advice read back to them in their native language using the Web Speech API.
 - **Dual-Engine Disease Classification**: Utilizes a PyTorch ResNet-50 deep neural network backed by a morphological HSV lesion-detection fallback to accurately diagnose 38+ crop conditions.
-- **Glassmorphic Modern UI**: Beautifully designed Next.js frontend with Tailwind CSS featuring dynamic blurs, soft glows, and highly responsive interactions.
+- **Glassmorphic Modern UI**: Beautifully designed Next.js frontend with Tailwind CSS featuring dynamic blurs, soft glows, and highly responsive auto-fit grid interactions.
 - **Gemini 1.5 Pro Botanist Assistant**: Intelligent AI chat module offering tailored, region-specific, biological, and chemical prescriptions for detected diseases.
-- **Geospatial Outbreak Radar**: Live mapping of disease clusters globally, tracking vectors across the USA Corn Belt, Brazilian Soybean fields, European vineyards, and more.
 - **CSIRO Image2Biomass**: Advanced heuristic analysis estimating plant dry/wet matter, chlorophyll levels, and projected yields directly from standard optical imagery.
 - **Explainable AI (Grad-CAM)**: Generates heatmaps highlighting the exact necrotized or chlorotic regions of the leaf the neural network is focusing on.
 
