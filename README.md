@@ -5,8 +5,8 @@
 **CropSakha AI** is an advanced, globally scaled Agricultural Intelligence platform. It leverages state-of-the-art Deep Learning (PyTorch ResNet-50) alongside Computer Vision (OpenCV) morphological fallback engines to diagnose crop diseases, estimate plant biomass, and track geopolitical pathogen outbreaks in real-time.
 
 ### 🌐 Live MVP Deployment
-You can access the live web application on Vercel:
-**[Launch CropSakha AI on Vercel](https://cropsakha-ai.vercel.app)**
+The application is connected to Vercel. You can view the live deployment URL directly from your Vercel Dashboard:
+**[View your Vercel Dashboard](https://vercel.com/dashboard)**
 
 ## ✨ Core Features
 - **Comprehensive 24 Indian Languages Support**: The UI and diagnosis engine dynamically adapt to all 24 official Indian languages (Schedule VIII) allowing for truly localized agricultural guidance.
