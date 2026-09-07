@@ -23,23 +23,6 @@ export default function ScanClient() {
   const [selectedCrop, setSelectedCrop] = useState('Auto-detect');
   const [activeTab, setActiveTab] = useState<'organic' | 'chemical' | 'prevention' | 'symptoms' | 'biomass'>('organic');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [colabUrl, setColabUrl] = useState('');
-
-  // Load Colab URL from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('colabUrl');
-      if (saved) setColabUrl(saved);
-    }
-  }, []);
-
-  const handleColabUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setColabUrl(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('colabUrl', val);
-    }
-  };
 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -126,9 +109,6 @@ export default function ScanClient() {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      if (colabUrl) {
-        headers['X-Colab-Url'] = colabUrl;
-      }
 
       const res = await fetch(`${API_URL}/scans/analyze`, {
         method: 'POST',
@@ -202,26 +182,6 @@ export default function ScanClient() {
 
   return (
     <div className="scan-client">
-      {/* Colab URL Setup */}
-      <div style={{ marginBottom: '1.75rem', background: '#F8FAFC', padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--accent-border)', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            ⚙️ Google Colab AI Backend Configuration
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <input 
-            type="text" 
-            placeholder="Paste your active Colab Ngrok URL here (e.g. https://xyz.ngrok-free.app)" 
-            value={colabUrl}
-            onChange={handleColabUrlChange}
-            style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '0.9rem' }}
-          />
-        </div>
-        <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-          Required to run the advanced LeafVision deep learning models.
-        </p>
-      </div>
 
       <div className="upload-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
         

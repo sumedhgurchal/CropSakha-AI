@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import { useI18n } from '@/lib/i18n';
+import { Search, BookOpen, Microscope, CloudRain, Leaf, Pill, ShieldCheck, Sprout } from 'lucide-react';
 
 const CROPS = ['All', 'Tomato', 'Potato', 'Corn', 'Apple', 'Grape', 'Pepper', 'Orange', 'Squash'];
 
@@ -19,7 +20,7 @@ export default function DiseasesPage() {
     const fetchDiseases = async () => {
       try {
         setLoading(true);
-        let url = '/api/diseases/';
+        let url = '/api/diseases';
         const params = new URLSearchParams();
         if (selectedCrop !== 'All') params.append('crop', selectedCrop);
         if (searchQuery.trim()) params.append('search', searchQuery.trim());
@@ -49,7 +50,7 @@ export default function DiseasesPage() {
       <div className="container" style={{ padding: '2.5rem 1.5rem' }}>
         <div style={{ marginBottom: '2rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'var(--accent-light)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-            🌿 Curated Knowledge Base
+            <BookOpen size={14} /> Curated Knowledge Base
           </div>
           <h1>Disease Encyclopedia</h1>
           <p>Scientific agricultural knowledge base with verified symptoms, organic biological cures, and chemical dosages.</p>
@@ -59,8 +60,8 @@ export default function DiseasesPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem' }}>
           {/* Search Input */}
           <div style={{ position: 'relative', width: '100%', maxWidth: '600px' }}>
-            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
-              🔍
+            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+              <Search size={18} />
             </span>
             <input 
               type="text"
@@ -109,7 +110,7 @@ export default function DiseasesPage() {
         {/* Cards Grid */}
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 0' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🌱</div>
+            <div style={{ marginBottom: '1rem' }}><Sprout size={48} color="var(--accent)" /></div>
             <p>Loading curated disease profiles...</p>
           </div>
         ) : error ? (
@@ -243,14 +244,14 @@ export default function DiseasesPage() {
               {/* Causes & Conditions */}
               {selectedDisease.causes && (
                 <div style={{ marginBottom: '1.25rem', padding: '1rem', background: '#F8FAFC', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                  <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>🔬 Pathogen & Causal Agent</h4>
+                  <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Microscope size={16} /> Pathogen & Causal Agent</h4>
                   <p style={{ fontSize: '0.88rem' }}>{selectedDisease.causes}</p>
                 </div>
               )}
 
               {selectedDisease.favorable_conditions && (
                 <div style={{ marginBottom: '1.25rem', padding: '1rem', background: '#F8FAFC', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                  <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>☁️ Favorable Environmental Conditions</h4>
+                  <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><CloudRain size={16} /> Favorable Environmental Conditions</h4>
                   <p style={{ fontSize: '0.88rem' }}>{selectedDisease.favorable_conditions}</p>
                 </div>
               )}
@@ -270,7 +271,7 @@ export default function DiseasesPage() {
               {/* Organic Treatments */}
               {selectedDisease.treatment_organic && selectedDisease.treatment_organic.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <h4 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>🌿 Biological & Organic Solutions:</h4>
+                  <h4 style={{ color: 'var(--accent)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Leaf size={16} /> Biological & Organic Solutions:</h4>
                   <ul style={{ paddingLeft: '1.25rem', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
                     {selectedDisease.treatment_organic.map((s: string, idx: number) => (
                       <li key={idx}>{s}</li>
@@ -282,7 +283,7 @@ export default function DiseasesPage() {
               {/* Chemical Treatments */}
               {selectedDisease.treatment_chemical && selectedDisease.treatment_chemical.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <h4 style={{ color: '#D97706', marginBottom: '0.5rem' }}>💊 Chemical Fungicide Protocols:</h4>
+                  <h4 style={{ color: '#D97706', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Pill size={16} /> Chemical Fungicide Protocols:</h4>
                   <ul style={{ paddingLeft: '1.25rem', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
                     {selectedDisease.treatment_chemical.map((s: string, idx: number) => (
                       <li key={idx}>{s}</li>
@@ -294,7 +295,7 @@ export default function DiseasesPage() {
               {/* Prevention */}
               {selectedDisease.prevention && selectedDisease.prevention.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <h4 style={{ color: '#0284C7', marginBottom: '0.5rem' }}>🛡️ Agronomic Prevention & Cultural Practices:</h4>
+                  <h4 style={{ color: '#0284C7', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><ShieldCheck size={16} /> Agronomic Prevention & Cultural Practices:</h4>
                   <ul style={{ paddingLeft: '1.25rem', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
                     {selectedDisease.prevention.map((s: string, idx: number) => (
                       <li key={idx}>{s}</li>

@@ -35,22 +35,8 @@ class ScanResponseSchema(BaseModel):
     quality: QualityCheckSchema
     severity_estimate: Optional[float] = None
     severity_label: Optional[str] = None
-    affected_area_percentage: Optional[float] = None
-    heatmap_base64: Optional[str] = None
-    display_name: Optional[str] = None
-    description: Optional[str] = None
-    treatment_organic: List[str] = []
-    treatment_chemical: List[str] = []
-    prevention: List[str] = []
-    symptoms: List[str] = []
-    audio_text: Optional[str] = None
-    regional_names: Dict[str, str] = {}
-    biomass: Optional[Dict[str, Any]] = None
-    gemini_prescriptions: Optional[Dict[str, Any]] = None
     
     model_config = ConfigDict(from_attributes=True)
-
-
 
 class ScanHistoryItemSchema(BaseModel):
     id: UUID
@@ -87,16 +73,10 @@ class DiseaseSchema(BaseModel):
     crop: str
     description: Optional[str] = None
     symptoms: List[str] = []
-    causes: Optional[str] = None
-    favorable_conditions: Optional[str] = None
     prevention: List[str] = []
     management: List[str] = []
-    treatment_organic: List[str] = []
-    treatment_chemical: List[str] = []
-    regional_names: Dict[str, str] = {}
     
     model_config = ConfigDict(from_attributes=True)
-
 
 # --- General System Schemas ---
 

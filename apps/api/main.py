@@ -96,7 +96,7 @@ async def health_check():
         "environment": settings.app_env,
         "database": "configured",
         "ml": {
-            "model_loaded": inference_service.model is not None,
+            "model_loaded": getattr(inference_service, "model", None) is not None,
             "active_model": inference_service.active_model_name,
             "gpu_available": inference_service.is_gpu_available,
             "classes_loaded": len(inference_service.class_labels) if inference_service.class_labels else 0

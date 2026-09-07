@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { Camera, BookOpen, Map, LayoutDashboard, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { isAuthenticated, removeToken } from '@/lib/auth';
 import { useRouter, usePathname } from 'next/navigation';
@@ -36,29 +37,32 @@ export default function Header() {
           <Link 
             href="/scan" 
             style={{ 
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
               color: isActive('/scan') ? 'var(--accent)' : undefined, 
               backgroundColor: isActive('/scan') ? 'var(--accent-light)' : undefined 
             }}
           >
-            📸 {t('nav.scan')}
+            <Camera size={16} /> {t('nav.scan')}
           </Link>
           <Link 
             href="/diseases"
             style={{ 
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
               color: isActive('/diseases') ? 'var(--accent)' : undefined, 
               backgroundColor: isActive('/diseases') ? 'var(--accent-light)' : undefined 
             }}
           >
-            📚 {t('nav.library')}
+            <BookOpen size={16} /> {t('nav.library')}
           </Link>
           <Link 
             href="/map"
             style={{ 
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
               color: isActive('/map') ? 'var(--accent)' : undefined, 
               backgroundColor: isActive('/map') ? 'var(--accent-light)' : undefined 
             }}
           >
-            🗺️ {t('nav.map')}
+            <Map size={16} /> {t('nav.map')}
           </Link>
           
           {isLoggedIn ? (
@@ -66,21 +70,23 @@ export default function Header() {
               <Link 
                 href="/dashboard" 
                 style={{ 
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
                   fontWeight: 700, 
                   color: isActive('/dashboard') ? 'var(--accent)' : 'var(--text-primary)',
                   backgroundColor: isActive('/dashboard') ? 'var(--accent-light)' : undefined
                 }}
               >
-                📊 {t('nav.dashboard')}
+                <LayoutDashboard size={16} /> {t('nav.dashboard')}
               </Link>
               <Link 
                 href="/history"
                 style={{ 
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
                   color: isActive('/history') ? 'var(--accent)' : undefined, 
                   backgroundColor: isActive('/history') ? 'var(--accent-light)' : undefined 
                 }}
               >
-                🕒 {t('nav.history')}
+                <Clock size={16} /> {t('nav.history')}
               </Link>
               <button 
                 onClick={handleLogout} 

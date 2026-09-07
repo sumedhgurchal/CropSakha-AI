@@ -50,6 +50,8 @@ share/python-wheels/
 LeafVision/
 models/
 backend/crop_disease_model.h5
+# KEEP the pre-trained classifier
+!CropSakha_LeafVision_classifier.pth
 
 # Datasets
 dataset/PlantVillage-Dataset/
@@ -57,8 +59,16 @@ dataset/*.zip
 data/
 uploads/
 
+# Database
+*.db
+
+# Scratch / Bug notebooks
+Untitled-*.ipynb
+Bug/
+
 # IDE / OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+

@@ -15,7 +15,7 @@ from ..schemas import DiseaseSchema
 router = APIRouter(prefix="/diseases", tags=["diseases"])
 
 
-@router.get("/", response_model=List[DiseaseSchema])
+@router.get("", response_model=List[DiseaseSchema])
 async def get_all_diseases(
     crop: Optional[str] = Query(None, description="Filter by crop name"),
     search: Optional[str] = Query(None, description="Search by disease or symptom"),
