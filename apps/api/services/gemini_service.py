@@ -14,8 +14,8 @@ class GeminiService:
         if self.is_configured:
             genai.configure(api_key=self.api_key)
             # Use gemini-1.5-pro for complex reasoning
-            self.model = genai.GenerativeModel('gemini-2.5-pro')
-            self.flash_model = genai.GenerativeModel('gemini-2.5-flash')
+            self.model = genai.GenerativeModel('gemini-3.1-pro-preview')
+            self.flash_model = genai.GenerativeModel('gemini-3.6-flash')
         else:
             logger.warning("GEMINI_API_KEY is not set. Gemini features will be disabled.")
 
